@@ -1,0 +1,13 @@
+{
+  "site": "pahang",
+  "state": "Pahang",
+  "order": 1,
+  "prefix": "p1",
+  "deployed_version": "v0",
+  "previous_version": null,
+  "versions_to_score": [
+    "v0"
+  ],
+  "scratch_seed": 0,
+  "expected_model_stem": "durian_11cls_640_v5_20261018_420b4c52"
+}

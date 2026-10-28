@@ -1,0 +1,6 @@
+# locked files must stay byte-identical (no CRLF conversion on Windows), or their SHA-256 changes
+sequential/** -text
+sites/**/*.json -text
+sites/**/*.txt -text
+sites/**/*.csv -text
+results/** -text

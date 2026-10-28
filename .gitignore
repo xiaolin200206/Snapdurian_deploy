@@ -1,0 +1,14 @@
+# images, labels and models never go into Git
+data/
+models/
+freeze_v0/
+runs/
+runs_seq/
+*.onnx
+*.pt
+*.zip
+# python / notebooks
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+_build/

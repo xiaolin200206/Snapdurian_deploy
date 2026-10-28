@@ -1,0 +1,13 @@
+{
+  "site": "penang",
+  "state": "Penang",
+  "order": 2,
+  "prefix": "pg1",
+  "deployed_version": "v1",
+  "previous_version": "v0",
+  "versions_to_score": [
+    "v0",
+    "v1"
+  ],
+  "scratch_seed": 0
+}

@@ -1,0 +1,5 @@
+numpy>=1.24
+pillow>=9.5
+onnxruntime>=1.16
+pyyaml>=6.0
+# training only (Colab): ultralytics==8.4.182
