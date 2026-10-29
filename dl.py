@@ -470,7 +470,7 @@ def cmd_score(a):
             print(f"    bootstrap {b + 1}/{B}")
     for name in recs:
         out["models"][name]["mAP50_core_ci95"] = [float(np.nanpercentile(boot[name], 2.5)), float(np.nanpercentile(boot[name], 97.5))]
-    dep, prev = cfg["deployed_version"], cfg.get("previous_version")
+    dep = cfg.get("h1_newer", cfg["deployed_version"]); prev = cfg.get("h1_older", cfg.get("previous_version"))
     if prev and dep in recs and prev in recs:
         d = boot[dep] - boot[prev]
         out["H1_pair"] = {"deployed": dep, "previous": prev,

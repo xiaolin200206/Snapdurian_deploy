@@ -10,6 +10,8 @@
 ## 现场
 - [ ] 每棵树第一张拍树干或树牌当分隔；按走的顺序编号 t1, t2, …；单数号树给 CEA，双数号树给这一篇。
 - [ ] 全部用 PWA 拍；位置共享打开。
+- [ ] **全部树拍完以后：换手机对照（偏差 D2）**：回头挑 2–3 棵拍过的树，每棵 iPhone 拍 10 张、小米拍 10 张（有症状的叶子）。
+      iPhone 用主邀请码，小米用**另一个邀请码**，都用 PWA。这一段**不要写进 trees.csv**。
 
 ## 回来
 1. 服务器上导出这一站的照片（只导出这一天、你自己的邀请码）：
@@ -37,7 +39,8 @@
 - `python dl.py build-train --name v3 --merged data/merged_v5 --sites pahang penang malacca`
 - 在 Colab 用 `notebooks/train_version_colab.ipynb` 训练并导出 ONNX。
 - `python dl.py register --version v3 --onnx <导出的 best.onnx> --server-file <服务器上的文件名>`
-- **commit + push `sequential/versions_log.md` 之后**，才去下一站；服务器上 `admin.py use` 这个文件。
+- 偏差 D1：Johor 是 Malacca 第二天去的，Johor 继续用 v2 预标。v3 在整趟回来、Malacca QC 完之后再训练。
+  登记 v3 之后 commit + push；服务器上换不换成 v3 都不影响 Johor（Johor 那时已经拍完了）。
 - H3（可以之后再做）：等量替换 S3，三个种子（把 `_s0` 和 `--seed 0` 换成 1、2 再跑两次）：
   `python dl.py build-swap --name S3_s0 --merged data/merged_v5 --manifest data/durian_11cls_640_v5_manifest.csv --base-sites pahang penang --new-site malacca --seed 0`
   v2 配方的另外两个种子：`python dl.py build-train --name R2_s1 --merged data/merged_v5 --sites pahang penang --seed 1`（s2 同理）。

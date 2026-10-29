@@ -31,6 +31,8 @@ A companion prospective test of farm-level generalisation uses the **odd-numbere
 3. **Per-site locks** (`sites/<site>/scratch_lock.json`, `sites/<site>/lock.json`): fingerprints of the
    from-scratch labels (before QC), of the test set, of all final labels and of the raw pre-labels.
 4. **Scoring** (`dl.py score`) refuses to run if the test set, a model or the version log does not match.
+5. **Deviations** ([`sequential/deviations.md`](sequential/deviations.md)): any change of plan is recorded
+   before the data it affects exist; the prelock files are never edited.
 
 ## Layout
 

@@ -3,13 +3,16 @@
   "state": "Johor",
   "order": 4,
   "prefix": "jh1",
-  "deployed_version": "v3",
-  "previous_version": "v2",
+  "deployed_version": "v2",
+  "previous_version": "v1",
   "versions_to_score": [
     "v0",
     "v1",
     "v2",
     "v3"
   ],
-  "scratch_seed": 0
+  "scratch_seed": 0,
+  "h1_newer": "v3",
+  "h1_older": "v2",
+  "deviation": "D1 (sequential/deviations.md): visited the day after Malacca, so pre-labelled by v2; v3 trained after the trip and scored offline"
 }
