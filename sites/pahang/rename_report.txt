@@ -1,0 +1,10 @@
+site pahang  renamed 2026-10-30T15:30:44+08:00
+export: export  photos in export: 321
+assigned to trees: 320  (odd/CEA 170, even/this study 150)  unassigned: 1
+per tree: t1=31, t2=35, t3=35, t4=32, t5=26, t6=22, t7=18, t8=23, t9=24, t10=14, t11=10, t12=15, t13=16, t14=9, t15=10
+pre-labelling model(s) in export: {'durian_11cls_640_v5_20261018_420b4c52': 321}
+expected deployed model: durian_11cls_640_v5_20261018_420b4c52
+tree boundaries (cut in the longest pause between photos near each noted change): t1|t2 at 08:56:27 (pause 56 s); t2|t3 at 09:08:41 (pause 51 s); t3|t4 at 09:21:55 (pause 38 s); t4|t5 at 09:37:15 (pause 44 s); t5|t6 at 09:49:49 (pause 503 s); t6|t7 at 10:05:43 (pause 550 s); t7|t8 at 10:20:48 (pause 124 s); t8|t9 at 10:29:55 (pause 76 s); t9|t10 at 10:39:14 (pause 54 s); t10|t11 at 10:43:51 (pause 58 s); t11|t12 at 10:47:18 (pause 36 s); t12|t13 at 10:51:06 (pause 36 s); t13|t14 at 10:56:38 (pause 38 s); t14|t15 at 10:59:13 (pause 27 s)
+photos up to 2 min outside their tree's noted range, assigned to it: 3
+unassigned (outside every tree time range): 2026-10-30_ED07-425E_8a84a35a.jpg @ 2026-10-30T10:10:18.855000+08:00
+check sheet (first two and last two photos of every tree): tree_check.jpg
