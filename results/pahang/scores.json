@@ -1,0 +1,89 @@
+{
+  "site": "pahang",
+  "created": "2026-11-01T21:41:52+08:00",
+  "lock_sha256": "ece531f67246dd65f112fb2684edf6fe244265963c9313e31e890797727261c0",
+  "evaluation": {
+    "inference": {
+      "format": "onnx",
+      "imgsz": 640,
+      "conf": 0.001,
+      "nms_iou": 0.7,
+      "max_det": 300,
+      "preprocessing": "identical to the deployed server: EXIF transpose, letterbox 640, grey 114 padding, PIL bilinear",
+      "postprocessing": "Ultralytics validation style: multi-label candidates (class score > conf), top 30000, class-aware NMS, max 300"
+    },
+    "class_merge_before_scoring": {
+      "scale_insect": "psyllid"
+    },
+    "ap": "AP50 per class as Ultralytics 8.4 ap_per_class (101-point, IoU 0.5)",
+    "primary_metric": {
+      "name": "mAP50-core",
+      "core_classes": [
+        "algal_spot",
+        "leaf_spot_blight",
+        "leafhopper_damage",
+        "psyllid",
+        "psyllid_damage"
+      ],
+      "min_gt_boxes_per_class_per_site": 10,
+      "same_class_set_for_all_versions_at_a_site": true
+    },
+    "secondary_metric": "mAP50 over all classes with >= 1 GT box (reported, no prediction)",
+    "bootstrap": {
+      "unit": "tree",
+      "within": "site",
+      "replicates": 2000,
+      "seed": 0,
+      "missing_class_in_replicate": "left out of that replicate's mean",
+      "pooled_H1": "sites resampled independently"
+    },
+    "implementation": "dl.py score; checked against Ultralytics 8.4 val of v0 on merged_v5 val before any site is scored (tolerance 0.01 all-class mAP50)"
+  },
+  "models": {
+    "v0": {
+      "kind": "registered",
+      "sha256": "420b4c520f98f301b2fbbef7c471372e4091ccdd28692d7f9afbf6dda3d51dce",
+      "mAP50_core": 0.32664148264056303,
+      "mAP50_all": 0.33572935219450306,
+      "AP50": {
+        "algal_spot": 0.5655496863160603,
+        "leaf_spot_blight": 0.2670512806174904,
+        "leafhopper_damage": 0.1558195822263868,
+        "psyllid": 0.543085023407317,
+        "psyllid_damage": 0.1017018406355606,
+        "web_blight": 0.19823886639676105,
+        "weevil_damage": 0.5186591857619453
+      },
+      "mAP50_core_ci95": [
+        0.26441675277644877,
+        0.3989475642628054
+      ]
+    }
+  },
+  "core_classes_used": [
+    "algal_spot",
+    "leaf_spot_blight",
+    "leafhopper_damage",
+    "psyllid",
+    "psyllid_damage"
+  ],
+  "gt_boxes_merged": {
+    "algal_spot": 1208,
+    "leaf_spot_blight": 1123,
+    "leafhopper_damage": 38,
+    "psyllid": 217,
+    "psyllid_damage": 257,
+    "web_blight": 4,
+    "weevil_damage": 32
+  },
+  "n_images": 150,
+  "trees": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "site": "pahang",
+  "created": "2026-11-01T21:41:14+08:00",
+  "n_images": 320,
+  "all_classes": {
+    "unchanged": 2896,
+    "relabelled": 41,
+    "added": 3577,
+    "removed": 123
+  },
+  "rate_per_image": 11.690625,
+  "core_classes": {
+    "unchanged": 2840,
+    "relabelled": 25,
+    "added": 3578,
+    "removed": 74
+  },
+  "rate_per_image_core": 11.490625,
+  "qc_hours": 15.0,
+  "prelabel_threshold": "as exported by the PWA (conf >= 0.25)"
+}

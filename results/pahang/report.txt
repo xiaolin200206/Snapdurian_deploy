@@ -1,0 +1,4 @@
+Site pahang (order 1), 150 test images, trees [2, 4, 6, 8, 10, 12, 14]
+core classes used: ['algal_spot', 'leaf_spot_blight', 'leafhopper_damage', 'psyllid', 'psyllid_damage']
+
+v0         mAP50-core 0.3266  [0.2644, 0.3989]   mAP50-all 0.3357   (registered, 420b4c520f98…)
