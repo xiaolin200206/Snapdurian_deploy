@@ -52,7 +52,7 @@ data/, models/   local only (not committed): images, labels, ONNX files
 ```
 pip install -r requirements.txt
 python dl.py status
-python dl.py register --version v0 --onnx freeze_v0/durian_11cls_640_v5.onnx   # puts v0 at models/v0.onnx
+python dl.py register --version v0 --onnx freeze/v0/durian_11cls_640_v5.onnx   # puts v0 at models/v0.onnx
 ```
 
 Then follow `sites/<site>/steps.md` for each site, in order. Scoring runs on CPU (ONNX Runtime). Training runs

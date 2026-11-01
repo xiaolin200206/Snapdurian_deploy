@@ -20,6 +20,7 @@
 Paths: images, labels and models live under data/ and models/ (not committed).
 """
 import argparse
+import os
 import csv
 import datetime as dt
 import io
@@ -547,6 +548,93 @@ def cmd_merge_qc(a):
               + (" --missing-as-empty" if missing else ""))
 
 
+# ============================================================ tidy (housekeeping; never touches anything a later step reads)
+SITE_TEMP = {
+    "_export_unzipped": "PWA 导出的临时解压（zip 还在）",
+    "_qc_export_unzipped": "Roboflow 导出的临时解压（zip 还在）",
+    "roboflow_upload": "上传 Roboflow 用的副本（已经上传过）",
+    "roboflow_upload_scratch40": "从零标那 40 张（H4 已取消）",
+    "scratch_upload": "从零标那 40 张（H4 已取消）",
+    "preview_test": "预览用的副本", "preview_preds": "预览的缓存",
+    "unassigned": "不在任何树时间段里的照片",
+}
+SITE_KEEP = {
+    "export": "PWA 原始导出（底稿，别动）", "export.zip": "PWA 原始导出（底稿，别动）",
+    "qc_export.zip": "Roboflow 的 QC 导出（底稿，别动）",
+    "renamed": "按树改名的照片 + v0 原始预标（score / qc / farmer 要用）",
+    "final": "合并后的终标（split 读它）", "final_product": "锁定的终标（qc 会核对）",
+    "test_even": "锁定的双数树测试集（score 会核对）", "train_all": "下一版的训练数据（pack-train 打包它）",
+    "preds": "打分时的模型预测缓存", "cea_export": "CEA 用的标注（Phomopsis / leaf_rot 分开）",
+    "tree_check.jpg": "改名时的分树检查图", "preview.json": "锁定前的预览分数",
+}
+ROOT_KNOWN = {"dl.py", "dlcore", "notebooks", "results", "sequential", "sites", "data", "models", "freeze", "README.md",
+              "requirements.txt", ".gitattributes", ".gitignore", ".git", "__pycache__", ".ipynb_checkpoints"}
+
+
+def _rmtree(p):
+    import stat
+    def unlock(func, path, *_):
+        os.chmod(path, stat.S_IWRITE); func(path)
+    shutil.rmtree(p, onerror=unlock)
+
+
+def _size(p):
+    p = Path(p)
+    return p.stat().st_size if p.is_file() else sum(f.stat().st_size for f in p.rglob("*") if f.is_file())
+
+
+def cmd_tidy(a):
+    acts, odd = [], []                     # (description, function)
+    for fz in sorted(ROOT.glob("freeze_v*")):
+        if fz.is_dir():
+            dest = ROOT / "freeze" / fz.name.replace("freeze_", "")
+            acts.append((f"移动 {fz.name}/ → freeze/{dest.name}/", lambda fz=fz, dest=dest: (dest.parent.mkdir(exist_ok=True),
+                                                                                          shutil.move(str(fz), str(dest)))))
+    gi = ROOT / ".gitignore"
+    if gi.exists() and "freeze/" not in gi.read_text(encoding="utf-8").split():
+        acts.append((".gitignore 加一行 freeze/", lambda: gi.write_text(gi.read_text(encoding="utf-8").rstrip("\n") + "\nfreeze/\n",
+                                                                        encoding="utf-8")))
+    if (ROOT / "__pycache__").exists():
+        acts.append(("删除 __pycache__/（Python 缓存）", lambda: _rmtree(ROOT / "__pycache__")))
+    odd += [p.name for p in ROOT.iterdir() if p.name not in ROOT_KNOWN and not p.name.startswith("freeze_v")]
+    for sd in sorted((DATA / "sites").glob("*")) if (DATA / "sites").exists() else []:
+        if not sd.is_dir():
+            continue
+        site, locked = sd.name, (SITES_DIR / sd.name / "lock.json").exists()
+        for name, why in SITE_TEMP.items():
+            p = sd / name
+            if p.exists():
+                if locked:
+                    acts.append((f"删除 data/sites/{site}/{name}/  {_size(p) / 1e6:.0f} MB  —— {why}", lambda p=p: _rmtree(p)))
+                else:
+                    odd.append(f"data/sites/{site}/{name}（这一站还没锁定，先不删）")
+        cz = sd / f"{site}_cea_odd.zip"
+        if (sd / "cea_odd").exists() and cz.exists():
+            acts.append((f"删除 data/sites/{site}/cea_odd/ —— 和 {cz.name} 一模一样", lambda p=sd / "cea_odd": _rmtree(p)))
+        known = set(SITE_KEEP) | set(SITE_TEMP) | {"cea_odd", cz.name, f"{site}_train_all.zip", "qc_export.zip.zip"}
+        odd += [f"data/sites/{site}/{p.name}" for p in sd.iterdir() if p.name not in known]
+    if not acts:
+        print("没有要整理的。")
+    else:
+        print(("正在整理：" if a.apply else "会做这些（加 --apply 才真的执行）：") + "\n  " + "\n  ".join(d for d, _ in acts))
+        if a.apply:
+            for d, f in acts:
+                f()
+    if odd:
+        print("\n不认识、没有动的（自己看一眼要不要留）：\n  " + "\n  ".join(odd))
+    print("\n各个文件夹是做什么的：")
+    print("  dl.py, dlcore/, notebooks/   代码（进 Git）\n"
+          "  sequential/                  预锁定、版本登记 versions_log.md、偏差记录 deviations.md（进 Git）\n"
+          "  sites/<站>/                  每站的配置、树的时间表、各步报告、lock.json（进 Git）\n"
+          "  results/<站>/                打分、QC 统计、farmer 结果（进 Git）\n"
+          "  models/                      登记过的模型 v0.onnx、v1.onnx…（打分用，不进 Git）\n"
+          "  freeze/                      每一版的原始模型文件，留底（不进 Git）\n"
+          "  data/sites/<站>/             照片和标注（不进 Git）：")
+    for name, why in SITE_KEEP.items():
+        print(f"      {name:<16} {why}")
+    print(f"      {'<站>_train_all.zip':<16} 传到 Drive 的训练包；{'<站>_cea_odd.zip':<16} 交给 CEA 的单数树包")
+
+
 # ============================================================ split
 def cmd_split(a):
     cfg = load_site(a.site); P = site_paths(a.site)
@@ -858,7 +946,7 @@ def cmd_preview(a):
                           "QC 终标（双数号树）")
     v = cfg["deployed_version"]; mp = MODELS / f"{v}.onnx"
     if not mp.exists():
-        die(f"缺模型 {mp}。v0 的话跑：python dl.py register --version v0 --onnx <freeze_v0 里的 durian_11cls_640_v5.onnx>")
+        die(f"缺模型 {mp}。v0 的话跑：python dl.py register --version v0 --onnx freeze/v0/durian_11cls_640_v5.onnx")
     if v in versions_log() and versions_log()[v]["sha256"] != sha256_file(mp):
         die(f"{mp} 的哈希和 versions_log.md 里登记的 {v} 不一致。")
     Q = dict(P); Q["test"] = P["d"] / "preview_test"; Q["preds"] = P["d"] / "preview_preds"
@@ -992,6 +1080,52 @@ def cmd_export_cea(a):
                 z.write(f, f.relative_to(out_dir).as_posix())
     print("\n".join(note))
     print(f"\n已打包：{zp}（只含单数号树；不要 commit 这个 zip）")
+
+
+def cmd_farmer(a):
+    """Photo-level view of what the app told the grower: the stored pre-labels (conf >= 0.25, exactly what the app
+    showed) against the QC'd labels. Fair on every photo of the site, because the deployed version never saw this site."""
+    P = site_paths(a.site)
+    gt_dir = P["final_lbl"] if P["final_lbl"].exists() else P["final_in"] / "labels"
+    if not gt_dir.exists():
+        die("还没有终标：先跑 merge-qc（和 split）。")
+    imgs = images_in(P["images"])
+    if a.even_only:
+        imgs = [p for p in imgs if (tree_of(p.stem) or 1) % 2 == 0]
+    rows = []
+    for p in imgs:
+        g = read_yolo(gt_dir / f"{p.stem}.txt"); r = read_yolo(P["pre"] / f"{p.stem}.txt")
+        g = set(merge_cls(g[:, 0]).tolist()) if g is not None and len(g) else set()
+        r = set(merge_cls(r[:, 0]).tolist()) if r is not None and len(r) else set()
+        rows.append((g, r))
+    n = len(rows)
+    sick = [(g, r) for g, r in rows if g]; healthy = [(g, r) for g, r in rows if not g]
+    any_hit = sum(bool(r) for g, r in sick); right = sum(bool(g & r) for g, r in sick)
+    all_right = sum(g <= r for g, r in sick); fa_healthy = sum(bool(r) for g, r in healthy)
+    lines = [f"site {a.site}  what the app told the grower ({'even trees' if a.even_only else 'all photos'}: {n})",
+             f"  photos with disease (after QC): {len(sick)}",
+             f"    app reported something:                 {any_hit:>4}  ({any_hit / max(len(sick), 1):.0%})",
+             f"    app named at least one disease present: {right:>4}  ({right / max(len(sick), 1):.0%})",
+             f"    app named every disease present:        {all_right:>4}  ({all_right / max(len(sick), 1):.0%})",
+             f"  photos with no disease: {len(healthy)}; app still reported something: {fa_healthy}"
+             + (f" ({fa_healthy / len(healthy):.0%})" if healthy else ""),
+             "", f"  {'per disease':<20}{'photos with it':>15}{'app said it':>13}{'hit rate':>10}{'false alarms':>14}{'right when said':>17}"]
+    out = {"site": a.site, "created": now_myt(), "photos": n, "even_only": a.even_only, "photos_with_disease": len(sick),
+           "app_reported_something": any_hit, "app_named_a_present_disease": right, "app_named_all": all_right,
+           "photos_without_disease": len(healthy), "false_alarm_on_healthy": fa_healthy, "per_class": {}}
+    present = sorted({c for g, r in rows for c in g | r})
+    for c in present:
+        pos = [(g, r) for g, r in rows if c in g]; neg = [(g, r) for g, r in rows if c not in g]
+        hit = sum(c in r for g, r in pos); fa = sum(c in r for g, r in neg)
+        hr = f"{hit / len(pos):.0%}" if pos else "-"
+        prec = f"{hit / (hit + fa):.0%}" if hit + fa else "-"
+        lines.append(f"  {PRODUCT[c]:<20}{len(pos):>15}{hit:>13}{hr:>10}{fa:>14}{prec:>17}")
+        out["per_class"][PRODUCT[c]] = {"photos_with_it": len(pos), "app_said_it": hit, "false_alarms": fa}
+    lines.append("  hit rate = of the photos showing this disease, how many the app named it in; "
+                 "right when said = of the photos where the app named it, how many really had it (scale_insect counted as psyllid)")
+    P["results"].mkdir(parents=True, exist_ok=True)
+    write_json(P["results"] / ("farmer_even.json" if a.even_only else "farmer.json"), out)
+    print("\n".join(lines))
 
 
 def cmd_pack_train(a):
@@ -1173,6 +1307,8 @@ def main():
     s.add_argument("--manifest", required=True); s.add_argument("--base-sites", nargs="*", default=[]); s.add_argument("--new-site", required=True)
     s.add_argument("--seed", type=int, default=0); s.add_argument("--removal-seed", type=int, default=0); s.add_argument("--out")
     sub.add_parser("summary")
+    s = sub.add_parser("tidy"); s.add_argument("--apply", action="store_true")
+    s = sub.add_parser("farmer"); s.add_argument("--site", required=True); s.add_argument("--even-only", action="store_true")
     s = sub.add_parser("export-cea"); s.add_argument("--site", required=True)
     s = sub.add_parser("pack-train"); s.add_argument("--site", required=True)
     s = sub.add_parser("preview"); s.add_argument("--site", required=True); s.add_argument("--final")
@@ -1183,7 +1319,7 @@ def main():
     {"status": cmd_status, "rename": cmd_rename, "pick-scratch": cmd_pick_scratch, "merge-qc": cmd_merge_qc, "lock-scratch": cmd_lock_scratch,
      "split": cmd_split, "lock": cmd_lock, "score": cmd_score, "qc": cmd_qc, "anchor": cmd_anchor, "register": cmd_register,
      "build-train": cmd_build_train, "build-swap": cmd_build_swap, "summary": cmd_summary,
-     "pack-train": cmd_pack_train, "export-cea": cmd_export_cea, "eval-folder": cmd_eval_folder, "preview": cmd_preview}[a.cmd](a)
+     "pack-train": cmd_pack_train, "export-cea": cmd_export_cea, "farmer": cmd_farmer, "tidy": cmd_tidy, "eval-folder": cmd_eval_folder, "preview": cmd_preview}[a.cmd](a)
 
 
 if __name__ == "__main__":
