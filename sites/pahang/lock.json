@@ -1,0 +1,33 @@
+{
+  "stage": "lock",
+  "site": "pahang",
+  "order": 1,
+  "created": "2026-11-01T21:39:59+08:00",
+  "prelock_sha256": "eb622a3b6f787961c596f0b221908636cea3c026b0fe9cf53eaf561d690f5364",
+  "deployed_version": "v0",
+  "deployed_sha256": "420b4c520f98f301b2fbbef7c471372e4091ccdd28692d7f9afbf6dda3d51dce",
+  "versions_log_sha256": "8893023d4935cdc40eda1346399908859a4143269d9a87c43b6d5b59932219e3",
+  "test_set": {
+    "fingerprint": "4c008b364f520070b7ece9d287c6bc001a5db32767720c5f9d818f630560d736",
+    "n_files": 300,
+    "n_images": 150
+  },
+  "all_images": {
+    "fingerprint": "96d7ee91f21fd3c44c0a2bbcdbd82dfa732489c79a018f9bb9cebe6b23febdd7",
+    "n": 320
+  },
+  "final_labels_all": {
+    "fingerprint": "981fe11c4ce44341ecaa6d1067aa359176a7ea00d66e8fa5f25534fb10fe18a9",
+    "n": 320
+  },
+  "prelabels_all": {
+    "fingerprint": "e2223ed110dd93ec34e3afaa8cab0201f20af5c33a3f144da44b710ca03de738",
+    "n": 320
+  },
+  "scratch_lock_sha256": null,
+  "split_report": "site pahang  split 2026-11-01T21:39:57+08:00\nimages: all trees 320, even-tree test set 150 (7 trees: [2, 4, 6, 8, 10, 12, 14])\nboxes, even-tree test set: algal_spot=1208, leaf_spot_blight=1123, leafhopper_damage=38, psyllid=134, psyllid_damage=257, scale_insect=83, web_blight=4, weevil_damage=32\nboxes, all trees (training data for the next version): algal_spot=3068, leaf_spot_blight=2537, leafhopper_damage=51, psyllid=159, psyllid_damage=484, scale_insect=144, web_blight=9, weevil_damage=62\ncore classes with >= 10 boxes on the test set (scale_insect merged into psyllid): ['algal_spot', 'leaf_spot_blight', 'leafhopper_damage', 'psyllid', 'psyllid_damage']\ncore classes excluded at this site: []\n",
+  "qc_hours": 15.0,
+  "visit_date": "2026-10-30",
+  "district": "Bentong",
+  "note": ""
+}

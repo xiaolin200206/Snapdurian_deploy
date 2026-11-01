@@ -1,0 +1,6 @@
+site pahang  split 2026-11-01T21:39:57+08:00
+images: all trees 320, even-tree test set 150 (7 trees: [2, 4, 6, 8, 10, 12, 14])
+boxes, even-tree test set: algal_spot=1208, leaf_spot_blight=1123, leafhopper_damage=38, psyllid=134, psyllid_damage=257, scale_insect=83, web_blight=4, weevil_damage=32
+boxes, all trees (training data for the next version): algal_spot=3068, leaf_spot_blight=2537, leafhopper_damage=51, psyllid=159, psyllid_damage=484, scale_insect=144, web_blight=9, weevil_damage=62
+core classes with >= 10 boxes on the test set (scale_insect merged into psyllid): ['algal_spot', 'leaf_spot_blight', 'leafhopper_damage', 'psyllid', 'psyllid_damage']
+core classes excluded at this site: []

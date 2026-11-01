@@ -1,0 +1,24 @@
+site pahang  merge-qc 2026-11-01T21:06:43+08:00
+export: qc_export.zip
+images: 320 renamed, 318 with QC labels, 2 missing in export -> treated as empty: ['p1t11_2026-10-30_ED07-425E_57226de0', 'p1t8_2026-10-30_ED07-425E_127a210a']
+images with no box (Null): 19
+labels in the export that match no renamed image (ignored): 1, e.g. ['README.roboflow']
+class names in the export (boxes): Phomopsis=60, Phomopsis_missing=840, algal_missing=1150, algal_missing_modify=3, algal_modify=2, algal_spot=1913, leaf_rot=289, leaf_rot_missing=980, leaf_rot_modify=25, leaf_spot_blight=343, leafhopper_damage=17, leafhopper_damage_missing=34, psyllid=145, psyllid_damage=52, psyllid_damage_missing=421, psyllid_damage_modify=11, psyllid_missing=14, scale_insect=46, scale_insect_missing=98, web_blight=9, weevil_damage=47, weevil_damage_missing=13, weevil_damage_modify=2
+
+per class (product names; leaf_rot + phomopsis counted as leaf_spot_blight):
+  class                 final     v0  v0 kept  v0 found  _missing  _modify
+  algal_spot             3068   1921      99%       62%      1153        2
+  leaf_spot_blight       2537    721      94%       27%      1820       25
+  leafhopper_damage        51     27      59%       31%        34        0
+  pink_disease              0      1       0%         -         0        0
+  psyllid                 159    162      85%       87%        14        0
+  psyllid_damage          484     58      88%       11%       421       11
+  root_disease              0      3       0%         -         0        0
+  scale_insect            144     50      92%       32%        98        0
+  web_blight                9     36      25%      100%         0        0
+  weevil_damage            62     81      58%       76%        13        2
+  final = boxes after QC; v0 = v0 pre-labels (conf >= 0.25); v0 kept = share of v0 boxes you kept (same class, IoU >= 0.5); v0 found = share of your final boxes v0 had found
+all boxes vs v0 pre-labels: unchanged 2896, relabelled 41, added 3577, removed 123  (per image: 11.69 changes)
+
+CEA side: odd-tree boxes still named leaf_spot_blight (not split into Phomopsis / leaf_rot): 219  <- the CEA prepare step will stop on these; decide before running it
+written: C:\Users\Lim Ding Shan\Desktop\conference_preparation\data\sites\pahang\final (11 product classes, for dl.py split) and C:\Users\Lim Ding Shan\Desktop\conference_preparation\data\sites\pahang\cea_export (split names, for the CEA prepare step)

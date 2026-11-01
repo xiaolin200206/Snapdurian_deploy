@@ -81,6 +81,7 @@ def parse_local(s, date):
         if not date:
             die(f"trees.csv 里的时间 {s!r} 没有日期：加 --date YYYY-MM-DD，或者写成 '2026-10-30 09:15'")
         s = f"{date} {s}"
+    s = re.sub(r"(?<![\d:])(\d):(\d{2})", r"0\1:\2", s)      # 8:56 -> 08:56
     t = dt.datetime.fromisoformat(s)
     return t.replace(tzinfo=MYT) if t.tzinfo is None else t.astimezone(MYT)
 
@@ -98,7 +99,8 @@ def deployed_model_stem(site_cfg):
 # ============================================================ status
 def cmd_status(a):
     vl = versions_log()
-    print(f"已登记的版本：{', '.join(f'{k} ({v['sha256'][:8]}…)' for k, v in vl.items()) or '无'}")
+    reg = ", ".join(f"{k} ({v['sha256'][:8]}…)" for k, v in vl.items()) or "无"
+    print(f"已登记的版本：{reg}")
     for sd in sorted(SITES_DIR.iterdir(), key=lambda p: load_site(p.name)["order"] if (p / 'site.json').exists() else 99):
         if not (sd / "site.json").exists():
             continue
@@ -113,6 +115,86 @@ def cmd_status(a):
 
 
 # ============================================================ rename
+SLACK_S = 120
+PAUSE_WEIGHT = 1.0   # a pause outside the noted change must be longer than (weight x) its distance from it
+
+
+def assign_trees(trees, times):
+    """trees: [(tree, start, end)] sorted by tree number; times: {i: datetime}.
+    Each boundary between consecutive trees is cut in a pause between photos. The noted change (end of one tree to
+    start of the next, to the minute) is trusted first: a pause outside it wins only if it is longer than its distance
+    from the noted change, so a real walk between trees can correct a note that is a bit off, but an ordinary gap
+    between two photos of the same tree cannot.
+    A photo belongs to tree k if it lies between the two cuts and at most SLACK_S outside tree k's noted range."""
+    ts = sorted((t, i) for i, t in times.items() if t is not None)
+    cuts, notes = [], []
+    for (t1, s1, e1), (t2, s2, e2) in zip(trees, trees[1:]):
+        wlo, whi = min(e1, s2), max(e1, s2)                     # the noted change
+        lo, hi = wlo - dt.timedelta(seconds=60), whi + dt.timedelta(seconds=60)
+        pts = [lo] + [t for t, _ in ts if lo < t < hi] + [hi]
+        best = None
+        for a_, b_ in zip(pts, pts[1:]):
+            gap = (b_ - a_).total_seconds()
+            dist = max(0.0, (wlo - b_).total_seconds(), (a_ - whi).total_seconds())
+            score = gap - PAUSE_WEIGHT * dist
+            if best is None or score > best[0]:
+                best = (score, a_ + (b_ - a_) / 2, gap)
+        _, cut, gap = best
+        cuts.append(cut)
+        notes.append(f"t{t1}|t{t2} at {cut:%H:%M:%S} (pause {int(gap)} s)")
+    lows = [None] + cuts; highs = cuts + [None]
+    assign, slack = {}, 0
+    for (tn, s, e), lo, hi in zip(trees, lows, highs):
+        for t, i in ts:
+            if (lo is None or t > lo) and (hi is None or t <= hi) and \
+               s - dt.timedelta(seconds=SLACK_S) <= t <= e + dt.timedelta(seconds=SLACK_S):
+                assign[i] = tn
+                slack += not (s <= t <= e)
+    return assign, notes, slack
+
+
+def tree_contact_sheet(out_rows, P, size=180):
+    """One row per tree: its first two and last two photos with their times, so each boundary can be eyeballed."""
+    from PIL import Image, ImageDraw, ImageFont, ImageOps
+    def font(n):
+        try:
+            return ImageFont.load_default(size=n)
+        except Exception:
+            return ImageFont.load_default()
+    big, small = font(30), font(16)
+    by = defaultdict(list)
+    for r in sorted(out_rows, key=lambda r: r["taken_at_myt"]):
+        by[r["tree"]].append(r)
+    if not by:
+        return None
+    trees = sorted(by)
+    left, gap = 90, 6
+    sheet = Image.new("RGB", (left + 4 * (size + gap) + 24, len(trees) * (size + 28)), "white")
+    d = ImageDraw.Draw(sheet)
+    for row, tn in enumerate(trees):
+        y = row * (size + 28)
+        rs = by[tn]
+        show = [("first", rs[0]), ("", rs[1] if len(rs) > 1 else None), ("", rs[-2] if len(rs) > 3 else None),
+                ("last", rs[-1] if len(rs) > 2 else None)]
+        d.text((8, y + size // 2 - 22), f"t{tn}", fill="black", font=big)
+        d.text((8, y + size // 2 + 14), f"{len(rs)} photos", fill="grey", font=small)
+        for col, (tag, r) in enumerate(show):
+            x = left + col * (size + gap) + (24 if col >= 2 else 0)
+            if r is None:
+                continue
+            try:
+                im = ImageOps.exif_transpose(Image.open(P["images"] / r["file"])).convert("RGB")
+                im.thumbnail((size, size))
+                sheet.paste(im, (x, y))
+            except Exception:
+                pass
+            d.text((x, y + size + 4), f"{r['taken_at_myt'][11:19]}  {tag}", fill="black", font=small)
+        d.text((left + 2 * (size + gap) + 4, y + size // 2 - 10), "…", fill="black", font=big)
+    out = P["d"] / "tree_check.jpg"
+    sheet.save(out, quality=85)
+    return out
+
+
 def cmd_rename(a):
     cfg = load_site(a.site); P = site_paths(a.site)
     if P["rename_report"].exists() and not a.force:
@@ -140,13 +222,19 @@ def cmd_rename(a):
     for r in csv.DictReader(io.StringIO(trees_p.read_text(encoding="utf-8-sig"))):
         if not (r.get("tree") or "").strip():
             continue
-        trees.append((int(r["tree"]), parse_local(r["start"], a.date), parse_local(r["end"], a.date)))
-    trees.sort(key=lambda t: t[1])
-    for (t1, s1, e1), (t2, s2, e2) in zip(trees, trees[1:]):
-        if s2 <= e1:
-            die(f"树 {t1} 和树 {t2} 的时间段重叠了：{s1:%H:%M:%S}–{e1:%H:%M:%S} / {s2:%H:%M:%S}–{e2:%H:%M:%S}")
+        st, en = r["start"].strip().replace(".", ":"), r["end"].strip().replace(".", ":")
+        e = parse_local(en, a.date)
+        if en.count(":") == 1:                       # only minutes noted: the tree ran to the end of that minute
+            e += dt.timedelta(seconds=59)
+        trees.append((int(r["tree"]), parse_local(st, a.date), e))
     if len({t for t, _, _ in trees}) != len(trees):
         die("trees.csv 里有重复的树号")
+    trees.sort(key=lambda t: t[0])
+    for (t1, s1, e1), (t2, s2, e2) in zip(trees, trees[1:]):
+        if s2 < s1 or e1 < s1:
+            die(f"树号顺序和时间对不上：树 {t1} {s1:%H:%M}–{e1:%H:%M}，树 {t2} {s2:%H:%M}–{e2:%H:%M}")
+        if (e1 - s2).total_seconds() > 120:
+            die(f"树 {t1} 和树 {t2} 的时间段重叠超过 2 分钟：{s1:%H:%M:%S}–{e1:%H:%M:%S} / {s2:%H:%M:%S}–{e2:%H:%M:%S}")
     expect = a.expect_model or deployed_model_stem(cfg)
     for k in ("images", "pre"):
         shutil.rmtree(P[k], ignore_errors=True); P[k].mkdir(parents=True)
@@ -155,11 +243,13 @@ def cmd_rename(a):
     if img_dir is None:
         die("导出里没有 images/ 文件夹")
     lbl = label_files(src)
+    times = {i: (parse_ts(r.get("taken_at")) or parse_ts(r.get("received_at"))) for i, r in enumerate(rows)}
+    assign, boundary_notes, slack_used = assign_trees(trees, times)
     out_rows, per_tree, models, unassigned = [], Counter(), Counter(), []
-    for r in rows:
+    for i, r in enumerate(rows):
         stem = Path(r["file"]).stem
-        t = parse_ts(r.get("taken_at")) or parse_ts(r.get("received_at"))
-        tree = next((tn for tn, s, e in trees if t is not None and s <= t <= e), None)
+        t = times[i]
+        tree = assign.get(i)
         imgp = img_dir / r["file"]
         if not imgp.exists():
             die(f"导出里缺图片 {imgp}")
@@ -187,10 +277,28 @@ def cmd_rename(a):
     bad_model = {m: n for m, n in models.items() if expect and m != expect}
     if bad_model:
         lines.append(f"WARNING: photos pre-labelled by a different model: {bad_model}")
+    lines.append("tree boundaries (cut in the longest pause between photos near each noted change): " + "; ".join(boundary_notes))
+    if slack_used:
+        lines.append(f"photos up to 2 min outside their tree's noted range, assigned to it: {slack_used}")
     if unassigned:
         lines.append("unassigned (outside every tree time range): " + "; ".join(f"{f} @ {t}" for f, t in unassigned[:50]))
+    sheet = tree_contact_sheet(out_rows, P)
+    if sheet:
+        lines.append(f"check sheet (first two and last two photos of every tree): {sheet.name}")
     P["rename_report"].write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # Roboflow-ready copy (YOLO format: images/ + labels/ + data.yaml), for QC with pre-labels
+    rf = P["d"] / "roboflow_upload"
+    shutil.rmtree(rf, ignore_errors=True)
+    (rf / "images").mkdir(parents=True); (rf / "labels").mkdir()
+    for p in images_in(P["images"]):
+        shutil.copy2(p, rf / "images" / p.name)
+        shutil.copy2(P["pre"] / f"{p.stem}.txt", rf / "labels" / f"{p.stem}.txt")
+    import yaml
+    (rf / "data.yaml").write_text(yaml.safe_dump({"train": "images", "val": "images", "nc": len(PRODUCT), "names": PRODUCT},
+                                                 sort_keys=False), encoding="utf-8")
     print("\n".join(lines))
+    print(f"\nRoboflow 用的文件夹：{rf}（整个文件夹拖进 Roboflow，选 YOLO 格式）")
+    print("⚠ 先跑 pick-scratch：它会把从零标的 40 张从这个文件夹里移出去，之后剩下的才能上传 QC。")
     if bad_model:
         print("\n⚠ 有照片不是由这一站应该用的模型预标的。检查服务器上切换模型的时间（admin.py models），再决定怎么处理。")
     print(f"\n下一步：python dl.py pick-scratch --site {a.site}")
@@ -210,9 +318,26 @@ def cmd_pick_scratch(a):
     shutil.rmtree(P["scratch_upload"], ignore_errors=True); P["scratch_upload"].mkdir(parents=True)
     for p in pick:
         shutil.copy2(p, P["scratch_upload"] / p.name)
+    # take these images out of the pre-labelled Roboflow folder: they are corrected separately, >= 3 days after lock-scratch
+    rf, later = P["d"] / "roboflow_upload", P["d"] / "roboflow_upload_scratch40"
+    if rf.exists():
+        shutil.rmtree(later, ignore_errors=True)
+        (later / "images").mkdir(parents=True); (later / "labels").mkdir()
+        for p in pick:
+            for sub, name in (("images", p.name), ("labels", f"{p.stem}.txt")):
+                if (rf / sub / name).exists():
+                    shutil.move(str(rf / sub / name), str(later / sub / name))
+        if (rf / "data.yaml").exists():
+            shutil.copy2(rf / "data.yaml", later / "data.yaml")
     print(f"抽了 {len(pick)} 张（单数号树，共 {len(imgs)} 张），列表：{P['subset']}")
-    print(f"图片在 {P['scratch_upload']}：上传到标注工具时 **不要带预标**，从零标。")
-    print("这份列表现在就 commit。CEA 那边的 40 张从零标用的也是这一批。")
+    print("这份列表现在就 commit。CEA 那边的 40 张从零标用的也是这一批。\n")
+    if rf.exists():
+        n_rest = len(images_in(rf / "images"))
+        print(f"现在可以 QC：{rf}（{n_rest} 张，带预标，这 40 张已经移出去了）")
+        print(f"从零标：{P['scratch_upload']}（{len(pick)} 张，不带预标）")
+        print(f"这 40 张的 QC：{later}（带预标）。要等从零标完、lock-scratch 之后至少 3 天才能打开。")
+    else:
+        print(f"从零标：{P['scratch_upload']}（上传到标注工具时不要带预标）")
 
 
 def _import_labels(folder, wanted, missing_as_empty, what):
@@ -256,6 +381,170 @@ def cmd_lock_scratch(a):
     write_json(P["scratch_lock"], lock)
     print(f"已锁定从零标：{n} 张，{lock['n_boxes']} 个框。指纹 {fp[:16]}…")
     print(f"现在 commit {P['scratch_lock'].relative_to(ROOT)}。这批图的 QC（在预标上改）至少等 3 天以后再做。")
+
+
+# ============================================================ merge-qc (Roboflow QC export -> final labels)
+QC_SUFFIX = re.compile(r"_(missing|modify|modified)$")
+LEAF_SPLIT = {"leaf_rot": "leaf_rot", "leafrot": "leaf_rot", "phomopsis": "phomopsis"}   # CEA keeps these apart
+
+
+def qc_class(name):
+    """Roboflow class name -> (product name, CEA-side name, suffix). Product merges leaf_rot / phomopsis into
+    leaf_spot_blight; the CEA-side name keeps them apart (the CEA script maps the rest)."""
+    from dlcore.common import ALIASES
+    k = re.sub(r"[\s\-]+", "_", str(name).strip().lower())
+    sufs = []
+    while (m := QC_SUFFIX.search(k)):                 # also handles stacked suffixes such as algal_missing_modify
+        sufs.append("modify" if m.group(1).startswith("modif") else "missing")
+        k = k[:m.start()]
+    suf = "missing" if "missing" in sufs else ("modify" if sufs else None)   # an added box stays "missing"
+    if k in LEAF_SPLIT:
+        return "leaf_spot_blight", LEAF_SPLIT[k], suf
+    prod = ALIASES.get(k)
+    return prod, prod, suf
+
+
+def cmd_merge_qc(a):
+    from dlcore.common import ALIASES  # noqa: F401  (qc_class uses it)
+    import yaml
+    P = site_paths(a.site)
+    if P["lock"].exists() and not a.cea_only:
+        die("这一站已经锁定，不能再合并 QC。只想重出 CEA 那份（比如把 leaf_spot_blight 拆成 Phomopsis / leaf_rot 之后），加 --cea-only。")
+    if a.cea_only and not (P["final_in"] / "labels").exists():
+        die("--cea-only 要在第一次 merge-qc 之后才能用。")
+    imgs = images_in(P["images"])
+    if not imgs:
+        die("先跑 rename。")
+    src = Path(a.export)
+    if not src.exists():
+        die(f"找不到 Roboflow 导出：{src}")
+    if src.is_file():
+        tmp = P["d"] / "_qc_export_unzipped"
+        shutil.rmtree(tmp, ignore_errors=True)
+        with zipfile.ZipFile(src) as z:
+            z.extractall(tmp)
+        src = tmp
+    names = export_names(src)
+    if not names:
+        die("导出里找不到类别表（data.yaml）。")
+    mapped = [qc_class(n) for n in names]
+    bad = [n for n, (pr, _, _) in zip(names, mapped) if pr is None]
+    if bad:
+        die(f"认不出这些类别名：{bad}。如果是 11 类里某一类的另一种写法，在 dlcore/common.py 的 ALIASES 里加一行。")
+    lf = label_files(src)
+    stems = [p.stem for p in imgs]
+    missing = [s_ for s_ in stems if s_ not in lf]
+    extra = sorted(set(lf) - set(stems))
+    if missing and not a.missing_as_empty:
+        die(f"Roboflow 导出里缺 {len(missing)} 张图的标注：\n  " + "\n  ".join(missing[:20]) +
+            "\n多半是在 Roboflow 里删掉了，或者没标也没点 Null（没点 Null 的图不会被导出）。"
+            "\n确认这几张都是没有病斑的，就加 --missing-as-empty 当作 Null；否则回 Roboflow 补上再导出。")
+    cea_names = sorted({c for _, c, _ in mapped})
+    prod_of = np.array([IDX[pr] for pr, _, _ in mapped])
+    cea_of = np.array([cea_names.index(c) for _, c, _ in mapped])
+    fin = P["final_in"]; cea = P["d"] / "cea_export"
+    for d in ((cea,) if a.cea_only else (fin, cea)):
+        shutil.rmtree(d, ignore_errors=True)
+    (cea / "images").mkdir(parents=True); (cea / "labels").mkdir()
+    if not a.cea_only:
+        (fin / "labels").mkdir(parents=True)
+        (fin / "data.yaml").write_text(yaml.safe_dump({"nc": len(PRODUCT), "names": PRODUCT}, sort_keys=False), encoding="utf-8")
+    unresolved_ci = {i for i, c in enumerate(cea_of) if cea_names[c] in ("leaf_spot_blight", "web_blight")}
+    changed, dropped = [], Counter()
+    tot_odd = Counter(); n_odd = 0
+    (cea / "data.yaml").write_text(yaml.safe_dump({"nc": len(cea_names), "names": cea_names}, sort_keys=False), encoding="utf-8")
+    by_name, by_suffix = Counter(), Counter()
+    fin_cls, pre_cls, matched = Counter(), Counter(), Counter()
+    tot = Counter(); n_null = 0; odd_unresolved = 0; all_unresolved = 0
+    for p in imgs:
+        raw = read_yolo(lf[p.stem]) if p.stem in lf else None
+        raw = np.zeros((0, 5)) if raw is None else raw
+        if len(raw) and (raw[:, 0] >= len(names)).any():
+            die(f"{lf[p.stem]} 里的类别编号超出了导出的类别表")
+        ci = raw[:, 0].astype(int)
+        for c in ci:
+            pr, _, suf = mapped[c]
+            by_name[names[c]] += 1; by_suffix[(pr, suf or "kept")] += 1
+        prod = raw.copy(); cea_l = raw.copy()
+        if len(raw):
+            prod[:, 0] = prod_of[ci]; cea_l[:, 0] = cea_of[ci]
+        t = tree_of(p.stem); odd = bool(t and t % 2 == 1)
+        unres = np.array([c in unresolved_ci for c in ci], dtype=bool)
+        all_unresolved += int(unres.sum()); odd_unresolved += int(unres.sum()) if odd else 0
+        if a.cea_drop_unresolved and unres.any():
+            dropped["odd" if odd else "even"] += int(unres.sum())
+            cea_l = cea_l[~unres]
+        if a.cea_only:
+            old = read_yolo(fin / "labels" / f"{p.stem}.txt")
+            old = np.zeros((0, 5)) if old is None else old
+            if old.shape != prod.shape or (len(old) and not np.allclose(np.round(old, 6), np.round(prod, 6), atol=2e-6)):
+                changed.append(p.stem)
+        else:
+            write_yolo(fin / "labels" / f"{p.stem}.txt", prod)
+        write_yolo(cea / "labels" / f"{p.stem}.txt", cea_l)
+        shutil.copy2(p, cea / "images" / p.name)
+        n_null += not len(raw)
+        pre = read_yolo(P["pre"] / f"{p.stem}.txt")
+        pre = np.zeros((0, 5)) if pre is None else pre
+        w, h = img_size(p)
+        mc = match_counts(pre, prod, w, h)
+        tot.update(mc)
+        if odd:
+            tot_odd.update(mc); n_odd += 1
+        for c in range(len(PRODUCT)):
+            f_c, p_c = prod[prod[:, 0] == c], pre[pre[:, 0] == c]
+            fin_cls[c] += len(f_c); pre_cls[c] += len(p_c)
+            if len(f_c) and len(p_c):
+                iou = box_iou(xywhn_to_xyxy_px(f_c, w, h), xywhn_to_xyxy_px(p_c, w, h))
+                matched[c] += len(greedy_pairs(iou, 0.5))
+    if changed:
+        shutil.rmtree(cea, ignore_errors=True)
+        die(f"--cea-only：有 {len(changed)} 张图的框和第一次合并时不一样（这一篇的标注已经锁定，只能改名，不能加、删、移框），"
+            f"例如 {changed[:5]}。CEA 那份没有写出。")
+    lines = [f"site {a.site}  merge-qc{' --cea-only' if a.cea_only else ''} {now_myt()}", f"export: {Path(a.export).name}",
+             f"images: {len(imgs)} renamed, {len(imgs) - len(missing)} with QC labels"
+             + (f", {len(missing)} missing in export -> treated as empty: {missing}" if missing else ""),
+             f"images with no box (Null): {n_null}"]
+    if extra:
+        lines.append(f"labels in the export that match no renamed image (ignored): {len(extra)}, e.g. {extra[:3]}")
+    lines.append("class names in the export (boxes): " + ", ".join(f"{n}={by_name[n]}" for n in names if by_name[n]))
+    lines.append("")
+    lines.append("per class (product names; leaf_rot + phomopsis counted as leaf_spot_blight):")
+    lines.append(f"  {'class':<20}{'final':>7}{'v0':>7}{'v0 kept':>9}{'v0 found':>10}{'_missing':>10}{'_modify':>9}")
+    for c in range(len(PRODUCT)):
+        if not (fin_cls[c] or pre_cls[c]):
+            continue
+        pr = PRODUCT[c]
+        found = f"{matched[c] / fin_cls[c]:.0%}" if fin_cls[c] else "-"
+        kept = f"{matched[c] / pre_cls[c]:.0%}" if pre_cls[c] else "-"
+        lines.append(f"  {pr:<20}{fin_cls[c]:>7}{pre_cls[c]:>7}{kept:>9}{found:>10}"
+                     f"{by_suffix[(pr, 'missing')]:>10}{by_suffix[(pr, 'modify')]:>9}")
+    lines.append("  final = boxes after QC; v0 = v0 pre-labels (conf >= 0.25); "
+                 "v0 kept = share of v0 boxes you kept (same class, IoU >= 0.5); v0 found = share of your final boxes v0 had found")
+    lines.append(f"all boxes vs v0 pre-labels: unchanged {tot['unchanged']}, relabelled {tot['relabelled']}, "
+                 f"added {tot['added']}, removed {tot['removed']}  (per image: "
+                 f"{(tot['added'] + tot['removed'] + tot['relabelled']) / len(imgs):.2f} changes)")
+    lines.append("")
+    m_ = re.search(r"photos in export: (\d+)", P["rename_report"].read_text(encoding="utf-8")) if P["rename_report"].exists() else None
+    lines.append("CEA side (odd trees):")
+    lines.append(f"  boxes not split into Phomopsis / leaf_rot (leaf_spot_blight or web_blight): {odd_unresolved} on odd trees "
+                 f"({all_unresolved} on all trees)"
+                 + (f"; dropped from the CEA copy: {dropped['odd']} odd-tree, {dropped['even']} even-tree boxes" if a.cea_drop_unresolved
+                    else ("  <- the CEA prepare step will stop on these" if odd_unresolved else "")))
+    lines.append(f"  numbers for the CEA 3_lock.sh: N_PHOTOS={m_.group(1) if m_ else '?'} (all photos in the PWA export), "
+                 f"N_ANNOTATED={n_odd} (odd-tree photos), N_ADDED={tot_odd['added']}, N_REMOVED={tot_odd['removed']}, "
+                 f"N_RELABELLED={tot_odd['relabelled']}")
+    lines.append(f"written: {cea} (split names, for the CEA prepare step)" if a.cea_only else
+                 f"written: {fin} (11 product classes, for dl.py split) and {cea} (split names, for the CEA prepare step)")
+    P["s"].mkdir(parents=True, exist_ok=True)
+    rep_name = "cea_merge_report.txt" if a.cea_only else "qc_merge_report.txt"
+    (P["s"] / rep_name).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print("\n".join(lines))
+    if a.cea_only:
+        print(f"\n报告存在 sites/{a.site}/{rep_name}。把 {cea} 整个传到 GPU 机器，跑 CEA 的 2_prepare.sh。")
+    else:
+        print(f"\n报告也存在 sites/{a.site}/{rep_name}。下一步：python dl.py split --site {a.site}"
+              + (" --missing-as-empty" if missing else ""))
 
 
 # ============================================================ split
@@ -558,6 +847,53 @@ def cmd_anchor(a):
 
 
 # ============================================================ versions / training lists
+# ============================================================ preview (before lock; descriptive, not the locked result)
+def cmd_preview(a):
+    cfg = load_site(a.site); P = site_paths(a.site)
+    imgs = images_in(P["images"])
+    if not imgs:
+        die("先跑 rename。")
+    even = [p for p in imgs if (tree_of(p.stem) or 1) % 2 == 0]
+    labs = _import_labels(Path(a.final) if a.final else P["final_in"], [p.stem for p in even], a.missing_as_empty,
+                          "QC 终标（双数号树）")
+    v = cfg["deployed_version"]; mp = MODELS / f"{v}.onnx"
+    if not mp.exists():
+        die(f"缺模型 {mp}。v0 的话跑：python dl.py register --version v0 --onnx <freeze_v0 里的 durian_11cls_640_v5.onnx>")
+    if v in versions_log() and versions_log()[v]["sha256"] != sha256_file(mp):
+        die(f"{mp} 的哈希和 versions_log.md 里登记的 {v} 不一致。")
+    Q = dict(P); Q["test"] = P["d"] / "preview_test"; Q["preds"] = P["d"] / "preview_preds"
+    shutil.rmtree(Q["test"], ignore_errors=True)
+    (Q["test"] / "images").mkdir(parents=True); (Q["test"] / "labels").mkdir()
+    for p in even:
+        shutil.copy2(p, Q["test"] / "images" / p.name); write_yolo(Q["test"] / "labels" / f"{p.stem}.txt", labs[p.stem])
+    print(f"  {v} 推理 {len(even)} 张双数号树的图 …")
+    _, z = run_model(mp, Q, v)
+    recs = per_image_records(Q, z)
+    gt = Counter(int(c) for r in recs for c in r["gcls"])
+    core_idx = [IDX[c] for c in CORE if gt.get(IDX[c], 0) >= MIN_GT]
+    m, ap = maps_from(recs, core_idx)
+    trees = sorted({r["tree"] for r in recs}); by = defaultdict(list)
+    for r in recs:
+        by[r["tree"]].append(r)
+    rng = np.random.default_rng(0)
+    boot = [maps_from([r for t in rng.choice(trees, size=len(trees), replace=True) for r in by[t]], core_idx)[0]
+            for _ in range(a.bootstrap)]
+    ci = [float(np.nanpercentile(boot, 2.5)), float(np.nanpercentile(boot, 97.5))]
+    out = {"site": a.site, "created": now_myt(), "model": v, "n_images": len(even), "trees": trees,
+           "core_classes_used": [PRODUCT[c] for c in core_idx], "mAP50_core": m, "mAP50_core_ci95": ci,
+           "AP50": {PRODUCT[c]: float(x) for c, x in sorted(ap.items())},
+           "gt_boxes": {PRODUCT[c]: n for c, n in sorted(gt.items())},
+           "note": "preview before lock; the locked score (dl.py score) is the one reported"}
+    write_json(P["d"] / "preview.json", out)
+    print(f"\n预览（还没锁定，只给你自己看）：{a.site}，{v}，双数号树 {len(trees)} 棵 {len(even)} 张")
+    print(f"mAP50-core = {m:.3f}  (95% CI {ci[0]:.3f}–{ci[1]:.3f}，按树 bootstrap)")
+    print("核心类：" + ", ".join(f"{PRODUCT[c]} {ap[c]:.3f} ({gt[c]} 框)" for c in core_idx if c in ap))
+    rest = [c for c in sorted(ap) if c not in core_idx]
+    if rest:
+        print("其他类：" + ", ".join(f"{PRODUCT[c]} {ap[c]:.3f} ({gt.get(c, 0)} 框)" for c in rest))
+    print("锁定之后跑 score 得到的才是正式数字；只要双数号树的标注不再改，两个数会一样。")
+
+
 def cmd_register(a):
     vl = versions_log()
     p = Path(a.onnx)
@@ -613,6 +949,49 @@ def site_train_images(site):
     if fi != lock["all_images"]["fingerprint"] or fl != lock["final_labels_all"]["fingerprint"]:
         die(f"⚠ {site} 的训练数据和锁定时不一样。停止。")
     return imgs
+
+
+def cmd_export_cea(a):
+    """Odd-tree (CEA) photos and labels from cea_export -> data/sites/<site>/<site>_cea_odd.zip (for the CEA repo)."""
+    import yaml
+    P = site_paths(a.site)
+    cea = P["d"] / "cea_export"
+    if not (cea / "labels").exists():
+        die("还没有 cea_export：先跑 merge-qc。")
+    names = yaml.safe_load((cea / "data.yaml").read_text(encoding="utf-8"))["names"]
+    out_dir = P["d"] / "cea_odd"
+    shutil.rmtree(out_dir, ignore_errors=True)
+    (out_dir / "images").mkdir(parents=True); (out_dir / "labels").mkdir()
+    shutil.copy2(cea / "data.yaml", out_dir / "data.yaml")
+    per_tree, boxes, unres = Counter(), Counter(), 0
+    for p in images_in(cea / "images"):
+        t = tree_of(p.stem)
+        if not t or t % 2 == 0:
+            continue
+        shutil.copy2(p, out_dir / "images" / p.name)
+        lab = cea / "labels" / f"{p.stem}.txt"
+        shutil.copy2(lab, out_dir / "labels" / lab.name)
+        arr = read_yolo(lab)
+        arr = np.zeros((0, 5)) if arr is None else arr
+        for c in arr[:, 0].astype(int):
+            boxes[names[c]] += 1; unres += names[c] in ("leaf_spot_blight", "web_blight")
+        per_tree[t] += 1
+    n = sum(per_tree.values())
+    note = [f"{a.site} CEA test set (odd trees only), made {now_myt()} from Snapdurian_deploy data/sites/{a.site}/cea_export",
+            f"images: {n}  trees: " + ", ".join(f"t{t}={k}" for t, k in sorted(per_tree.items())),
+            "boxes: " + ", ".join(f"{k}={v}" for k, v in sorted(boxes.items())),
+            f"boxes not yet split into Phomopsis / leaf_rot (leaf_spot_blight, web_blight): {unres}"
+            + ("  -> the CEA prepare step stops on these; split them in Roboflow (rename only), rerun "
+               "`dl.py merge-qc --cea-only` and `dl.py export-cea` in Snapdurian_deploy" if unres else ""),
+            "YOLO format: images/ labels/ data.yaml (class names are mapped by the CEA prepare step)."]
+    (out_dir / "README.txt").write_text("\n".join(note) + "\n", encoding="utf-8")
+    zp = P["d"] / f"{a.site}_cea_odd.zip"
+    with zipfile.ZipFile(zp, "w", zipfile.ZIP_STORED) as z:
+        for f in sorted(out_dir.rglob("*")):
+            if f.is_file():
+                z.write(f, f.relative_to(out_dir).as_posix())
+    print("\n".join(note))
+    print(f"\n已打包：{zp}（只含单数号树；不要 commit 这个 zip）")
 
 
 def cmd_pack_train(a):
@@ -776,6 +1155,10 @@ def main():
     s.add_argument("--date", help="trees.csv 只写了时分时用的日期 YYYY-MM-DD"); s.add_argument("--expect-model"); s.add_argument("--force", action="store_true")
     s = sub.add_parser("pick-scratch"); s.add_argument("--site", required=True); s.add_argument("--n", type=int, default=40)
     s = sub.add_parser("lock-scratch"); s.add_argument("--site", required=True); s.add_argument("--scratch"); s.add_argument("--missing-as-empty", action="store_true")
+    s = sub.add_parser("merge-qc"); s.add_argument("--site", required=True); s.add_argument("--export", required=True)
+    s.add_argument("--missing-as-empty", action="store_true")
+    s.add_argument("--cea-only", action="store_true", help="after lock: only rebuild the CEA copy; product labels must be unchanged")
+    s.add_argument("--cea-drop-unresolved", action="store_true", help="drop leaf_spot_blight / web_blight boxes from the CEA copy")
     s = sub.add_parser("split"); s.add_argument("--site", required=True); s.add_argument("--final"); s.add_argument("--missing-as-empty", action="store_true"); s.add_argument("--force", action="store_true")
     s = sub.add_parser("lock"); s.add_argument("--site", required=True); s.add_argument("--qc-hours", type=float)
     s.add_argument("--visit-date"); s.add_argument("--district"); s.add_argument("--note")
@@ -790,14 +1173,17 @@ def main():
     s.add_argument("--manifest", required=True); s.add_argument("--base-sites", nargs="*", default=[]); s.add_argument("--new-site", required=True)
     s.add_argument("--seed", type=int, default=0); s.add_argument("--removal-seed", type=int, default=0); s.add_argument("--out")
     sub.add_parser("summary")
+    s = sub.add_parser("export-cea"); s.add_argument("--site", required=True)
     s = sub.add_parser("pack-train"); s.add_argument("--site", required=True)
+    s = sub.add_parser("preview"); s.add_argument("--site", required=True); s.add_argument("--final")
+    s.add_argument("--missing-as-empty", action="store_true"); s.add_argument("--bootstrap", type=int, default=2000)
     s = sub.add_parser("eval-folder"); s.add_argument("--model", required=True); s.add_argument("--images", required=True)
     s.add_argument("--labels"); s.add_argument("--merge", action="store_true")
     a = ap.parse_args()
-    {"status": cmd_status, "rename": cmd_rename, "pick-scratch": cmd_pick_scratch, "lock-scratch": cmd_lock_scratch,
+    {"status": cmd_status, "rename": cmd_rename, "pick-scratch": cmd_pick_scratch, "merge-qc": cmd_merge_qc, "lock-scratch": cmd_lock_scratch,
      "split": cmd_split, "lock": cmd_lock, "score": cmd_score, "qc": cmd_qc, "anchor": cmd_anchor, "register": cmd_register,
      "build-train": cmd_build_train, "build-swap": cmd_build_swap, "summary": cmd_summary,
-     "pack-train": cmd_pack_train, "eval-folder": cmd_eval_folder}[a.cmd](a)
+     "pack-train": cmd_pack_train, "export-cea": cmd_export_cea, "eval-folder": cmd_eval_folder, "preview": cmd_preview}[a.cmd](a)
 
 
 if __name__ == "__main__":
