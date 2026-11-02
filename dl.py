@@ -117,6 +117,12 @@ def cmd_status(a):
 
 # ============================================================ rename
 SLACK_S = 120
+CODE_IN_NAME = re.compile(r"_[0-9A-Z]{4}-[0-9A-Z]{4}(?=_|$)")    # the PWA puts the invite code in export file names
+
+
+def no_code(name):
+    """Drop the invite code from an export file name (it is a login credential and the records are public)."""
+    return CODE_IN_NAME.sub("", name)
 PAUSE_WEIGHT = 1.0   # a pause outside the noted change must be longer than (weight x) its distance from it
 
 
@@ -256,10 +262,10 @@ def cmd_rename(a):
             die(f"导出里缺图片 {imgp}")
         models[r.get("model", "")] += 1
         if tree is None:
-            unassigned.append((r["file"], t.isoformat() if t else "无时间"))
-            P["unassigned"].mkdir(parents=True, exist_ok=True); shutil.copy2(imgp, P["unassigned"] / r["file"])
+            unassigned.append((no_code(Path(r["file"]).stem) + Path(r["file"]).suffix, t.isoformat() if t else "无时间"))
+            P["unassigned"].mkdir(parents=True, exist_ok=True); shutil.copy2(imgp, P["unassigned"] / (no_code(Path(r["file"]).stem) + Path(r["file"]).suffix))
             continue
-        new = f"{cfg['prefix']}t{tree}_{stem}"
+        new = f"{cfg['prefix']}t{tree}_{no_code(stem)}"
         shutil.copy2(imgp, P["images"] / f"{new}{imgp.suffix.lower()}")
         pre = remap_to_product(read_yolo(lbl[stem]) if stem in lbl else np.zeros((0, 5)), names)
         write_yolo(P["pre"] / f"{new}.txt", pre)
@@ -451,7 +457,7 @@ def cmd_merge_qc(a):
         (fin / "labels").mkdir(parents=True)
         (fin / "data.yaml").write_text(yaml.safe_dump({"nc": len(PRODUCT), "names": PRODUCT}, sort_keys=False), encoding="utf-8")
     unresolved_ci = {i for i, c in enumerate(cea_of) if cea_names[c] in ("leaf_spot_blight", "web_blight")}
-    changed, dropped = [], Counter()
+    changed, dropped, post_lock = [], Counter(), []
     tot_odd = Counter(); n_odd = 0
     (cea / "data.yaml").write_text(yaml.safe_dump({"nc": len(cea_names), "names": cea_names}, sort_keys=False), encoding="utf-8")
     by_name, by_suffix = Counter(), Counter()
@@ -480,6 +486,9 @@ def cmd_merge_qc(a):
             old = np.zeros((0, 5)) if old is None else old
             if old.shape != prod.shape or (len(old) and not np.allclose(np.round(old, 6), np.round(prod, 6), atol=2e-6)):
                 changed.append(p.stem)
+                wc, hc = img_size(p)
+                post_lock.append({"file": p.name, "tree": tree_of(p.stem), "set": "odd (CEA)" if odd else "even (this study's test set)",
+                                  **match_counts(old, prod, wc, hc)})
         else:
             write_yolo(fin / "labels" / f"{p.stem}.txt", prod)
         write_yolo(cea / "labels" / f"{p.stem}.txt", cea_l)
@@ -498,7 +507,7 @@ def cmd_merge_qc(a):
             if len(f_c) and len(p_c):
                 iou = box_iou(xywhn_to_xyxy_px(f_c, w, h), xywhn_to_xyxy_px(p_c, w, h))
                 matched[c] += len(greedy_pairs(iou, 0.5))
-    if changed:
+    if changed and not a.cea_allow_changes:
         shutil.rmtree(cea, ignore_errors=True)
         die(f"--cea-only：有 {len(changed)} 张图的框和第一次合并时不一样（这一篇的标注已经锁定，只能改名，不能加、删、移框），"
             f"例如 {changed[:5]}。CEA 那份没有写出。")
@@ -527,6 +536,22 @@ def cmd_merge_qc(a):
                  f"{(tot['added'] + tot['removed'] + tot['relabelled']) / len(imgs):.2f} changes)")
     lines.append("")
     m_ = re.search(r"photos in export: (\d+)", P["rename_report"].read_text(encoding="utf-8")) if P["rename_report"].exists() else None
+    if post_lock:
+        pc = Counter(); pc_odd = Counter(); n_odd_ch = 0
+        for r in post_lock:
+            for k_ in ("added", "removed", "relabelled"):
+                pc[k_] += r[k_]
+                if r["set"].startswith("odd"):
+                    pc_odd[k_] += r[k_]
+            n_odd_ch += r["set"].startswith("odd")
+        with open(P["d"] / "post_lock_changes.csv", "w", newline="", encoding="utf-8") as f:
+            w_ = csv.DictWriter(f, fieldnames=list(post_lock[0])); w_.writeheader(); w_.writerows(post_lock)
+        lines.append(f"Corrections made after this study's lock (used for the CEA copy only; this study keeps its locked labels): "
+                     f"{len(post_lock)} photos ({n_odd_ch} odd-tree, {len(post_lock) - n_odd_ch} even-tree); "
+                     f"vs the locked labels: added {pc['added']}, removed {pc['removed']}, relabelled {pc['relabelled']} "
+                     f"(odd trees: added {pc_odd['added']}, removed {pc_odd['removed']}, relabelled {pc_odd['relabelled']}). "
+                     f"Per-photo list: data/sites/{a.site}/post_lock_changes.csv")
+        lines.append("")
     lines.append("CEA side (odd trees):")
     lines.append(f"  boxes not split into Phomopsis / leaf_rot (leaf_spot_blight or web_blight): {odd_unresolved} on odd trees "
                  f"({all_unresolved} on all trees)"
@@ -567,7 +592,7 @@ SITE_KEEP = {
     "preds": "打分时的模型预测缓存", "cea_export": "CEA 用的标注（Phomopsis / leaf_rot 分开）",
     "tree_check.jpg": "改名时的分树检查图", "preview.json": "锁定前的预览分数",
 }
-ROOT_KNOWN = {"dl.py", "dlcore", "notebooks", "results", "sequential", "sites", "data", "models", "freeze", "README.md",
+ROOT_KNOWN = {"release", "dl.py", "dlcore", "notebooks", "results", "sequential", "sites", "data", "models", "freeze", "README.md",
               "requirements.txt", ".gitattributes", ".gitignore", ".git", "__pycache__", ".ipynb_checkpoints"}
 
 
@@ -633,6 +658,104 @@ def cmd_tidy(a):
     for name, why in SITE_KEEP.items():
         print(f"      {name:<16} {why}")
     print(f"      {'<站>_train_all.zip':<16} 传到 Drive 的训练包；{'<站>_cea_odd.zip':<16} 交给 CEA 的单数树包")
+
+
+# ============================================================ release (per-site folders for a public data deposit, e.g. Zenodo)
+PRIVATE_DEFAULT = ["pink_disease", "root_disease", "stem_borer", "weevil_damage", "web_blight"]   # rare classes kept back
+RELEASE = ROOT / "release"
+
+
+def _jpeg_strip_metadata(src, dst):
+    """Copy a JPEG without EXIF/XMP/IPTC/comments (APP1, APP13, COM), losslessly. Returns False if not a plain JPEG."""
+    b = Path(src).read_bytes()
+    if b[:2] != b"\xff\xd8":
+        return False
+    out, i = bytearray(b[:2]), 2
+    while i + 4 <= len(b):
+        if b[i] != 0xFF:
+            return False
+        m = b[i + 1]
+        if m == 0xDA:                                   # start of scan: the rest is image data
+            out += b[i:]
+            Path(dst).write_bytes(bytes(out)); return True
+        n = int.from_bytes(b[i + 2:i + 4], "big")
+        if m not in (0xE1, 0xED, 0xFE):                 # drop APP1 (EXIF/XMP), APP13 (IPTC), COM
+            out += b[i:i + 2 + n]
+        i += 2 + n
+    return False
+
+
+def cmd_release(a):
+    from PIL import Image, ImageOps
+    private = set(a.private_classes if a.private_classes is not None else PRIVATE_DEFAULT)
+    bad = private - set(PRODUCT)
+    if bad:
+        die(f"不认识的类别：{sorted(bad)}")
+    sites = [a.site] if a.site else sorted(d.name for d in SITES_DIR.iterdir() if (d / "lock.json").exists())
+    if not sites:
+        die("还没有锁定的站。")
+    RELEASE.mkdir(exist_ok=True)
+    summary = []
+    for site in sites:
+        cfg = load_site(site); P = site_paths(site)
+        if not P["lock"].exists():
+            die(f"{site} 还没锁定，标注没有定稿，先不发布。")
+        lock = json.loads(P["lock"].read_text(encoding="utf-8"))
+        meta = {r["file"]: r for r in csv.DictReader(open(P["photos"], encoding="utf-8"))} if P["photos"].exists() else {}
+        out = RELEASE / site
+        shutil.rmtree(out, ignore_errors=True)
+        (out / "images").mkdir(parents=True); (out / "labels").mkdir()
+        rows, mapping, held, per_cls, k = [], [], 0, Counter(), Counter()
+        for p in images_in(P["images"]):
+            lab = read_yolo(P["final_lbl"] / f"{p.stem}.txt")
+            lab = np.zeros((0, 5)) if lab is None else lab
+            names = {PRODUCT[int(c)] for c in lab[:, 0]}
+            if names & private:
+                held += 1
+                continue
+            t = tree_of(p.stem); k[t] += 1
+            new = f"{cfg['prefix']}t{t}_{k[t]:04d}"
+            ok = False
+            with Image.open(p) as im:
+                orient = im.getexif().get(0x0112, 1)
+            if orient == 1:
+                ok = _jpeg_strip_metadata(p, out / "images" / f"{new}.jpg")
+            if not ok:                                          # rotate pixels (labels are in the upright frame) and re-encode
+                with Image.open(p) as im:
+                    ImageOps.exif_transpose(im).convert("RGB").save(out / "images" / f"{new}.jpg", quality=95)
+            write_yolo(out / "labels" / f"{new}.txt", lab)
+            per_cls.update(PRODUCT[int(c)] for c in lab[:, 0])
+            m = meta.get(p.name, {})
+            rows.append({"file": f"{new}.jpg", "site": site, "tree": t,
+                         "test_set": "yes" if t % 2 == 0 else "no",
+                         "date": (m.get("taken_at_myt") or "")[:10], "n_boxes": len(lab)})
+            mapping.append({"release_file": f"{new}.jpg", "internal_file": p.name})
+        with open(out / "photos.csv", "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=["file", "site", "tree", "test_set", "date", "n_boxes"]); w.writeheader(); w.writerows(rows)
+        (out / "classes.txt").write_text("\n".join(PRODUCT) + "\n", encoding="utf-8")
+        priv = P["d"] / "release_mapping.csv"                   # stays private (data/ is never pushed)
+        with open(priv, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=["release_file", "internal_file"]); w.writeheader(); w.writerows(mapping)
+        summary.append({"site": site, "state": cfg.get("state", site), "district": lock.get("district") or "",
+                        "visit_date": lock.get("visit_date") or "", "photos": len(rows), "trees": len(k),
+                        "held_back": held, "boxes": dict(per_cls), "lock_sha256": sha256_file(P["lock"])})
+        print(f"{site}: {len(rows)} 张公开（{len(k)} 棵树），{held} 张因含有不公开的类别而留下；→ {out}")
+        print(f"   内部文件名对照存在 {priv}（不公开）")
+    lines = ["# SnapDurian field photographs (per site)", "",
+             "Photographs of durian leaves and branches taken with the SnapDurian PWA on Malaysian farms, one folder per site.",
+             "Each folder: `images/` (JPEG, metadata removed), `labels/` (YOLO txt, class indices in `classes.txt`), `photos.csv`.",
+             "Trees are numbered in walking order; even-numbered trees form the site's test set (`test_set = yes`).", "",
+             "Labels: pre-labels from the deployed model, corrected by the author; a lesion is boxed only if its class and extent "
+             "are clear at the full-image view. Classes are treatment-based groups, not laboratory diagnoses.",
+             f"Photographs containing these classes are not included: {', '.join(sorted(private)) or 'none'}.", "",
+             "| site | state | district | visit date | photos | trees | not included | boxes |", "|---|---|---|---|---|---|---|---|"]
+    for r in summary:
+        lines.append(f"| {r['site']} | {r['state']} | {r['district']} | {r['visit_date']} | {r['photos']} | {r['trees']} | "
+                     f"{r['held_back']} | " + ", ".join(f"{c} {n}" for c, n in sorted(r["boxes"].items())) + " |")
+    lines += ["", "Lock files (SHA-256) of each site are in the Snapdurian_deploy repository, sites/<site>/lock.json.",
+              "", "License: CC BY 4.0 (change before upload if needed)."]
+    (RELEASE / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"\n{RELEASE / 'README.md'} 已更新。全部站做完后，把 release/ 整个压缩上传 Zenodo。release/ 不进 Git。")
 
 
 # ============================================================ split
@@ -774,7 +897,8 @@ def per_image_records(P, z):
         m = z["idx"] == i
         pcls = merge_cls(z["cls"][m]); pbox = z["boxes"][m]; conf = z["scores"][m]
         tp = match_tp(gcls, gbox, pcls, pbox, 0.5)
-        recs.append({"stem": p.stem, "tree": tree_of(p.stem), "tp": tp, "conf": conf, "pcls": pcls, "gcls": gcls})
+        gsize = float(np.median(np.sqrt(g[:, 3] * g[:, 4]))) if len(g) else None     # median relative box side; None = no GT box
+        recs.append({"stem": p.stem, "tree": tree_of(p.stem), "tp": tp, "conf": conf, "pcls": pcls, "gcls": gcls, "gsize": gsize})
     return recs
 
 
@@ -820,7 +944,8 @@ def cmd_score(a):
         r = per_image_records(P, z); recs[name] = r
         if gt_all is None:
             gt_all = Counter(int(c) for rr in r for c in rr["gcls"])
-        out["models"][name] = {"kind": kind, "sha256": sha}
+        from dlcore.infer import Detector as _D
+        out["models"][name] = {"kind": kind, "sha256": sha, "imgsz": _D(path).imgsz}
     core_idx = [IDX[c] for c in CORE if gt_all.get(IDX[c], 0) >= MIN_GT]
     out["core_classes_used"] = [PRODUCT[c] for c in core_idx]
     out["gt_boxes_merged"] = {PRODUCT[c]: n for c, n in sorted(gt_all.items())}
@@ -853,6 +978,46 @@ def cmd_score(a):
         out["H1_pair"] = {"deployed": dep, "previous": prev,
                           "diff": out["models"][dep]["mAP50_core"] - out["models"][prev]["mAP50_core"],
                           "diff_ci95": [float(np.nanpercentile(d, 2.5)), float(np.nanpercentile(d, 97.5))]}
+    # --pair A:B  -> paired tree-bootstrap difference A - B (exploratory comparisons, e.g. v0_1280:v0)
+    pairs = []
+    for pr_ in a.pair or []:
+        if ":" not in pr_ or any(n not in recs for n in pr_.split(":", 1)):
+            die(f"--pair 的格式是 A:B，而且两个名字都要在本次打分里，例如 v0_1280:v0。收到：{pr_}（有的：{list(recs)}）")
+        A_, B_ = pr_.split(":", 1); d = boot[A_] - boot[B_]
+        pairs.append({"a": A_, "b": B_, "diff": out["models"][A_]["mAP50_core"] - out["models"][B_]["mAP50_core"],
+                      "diff_ci95": [float(np.nanpercentile(d, 2.5)), float(np.nanpercentile(d, 97.5))]})
+    if pairs:
+        out["pairs"] = pairs
+    # exploratory split by lesion size: images split at the site median of their median relative GT box side
+    sizes = [r["gsize"] for r in next(iter(recs.values())) if r["gsize"] is not None]
+    if len(sizes) >= 20:
+        thr = float(np.median(sizes))
+        sub = {"near (larger lesions)": lambda r: r["gsize"] is not None and r["gsize"] >= thr,
+               "far (smaller lesions)": lambda r: r["gsize"] is not None and r["gsize"] < thr}
+        split = {"threshold_median_relative_box_side": thr, "images_without_gt_excluded": len(next(iter(recs.values()))) - len(sizes), "subsets": {}}
+        for sname, f in sub.items():
+            rows = {n: [r for r in rr if f(r)] for n, rr in recs.items()}
+            st = sorted({r["tree"] for r in next(iter(rows.values()))})
+            bt = {n: defaultdict(list) for n in rows}
+            for n, rr in rows.items():
+                for r in rr:
+                    bt[n][r["tree"]].append(r)
+            rng2 = np.random.default_rng(0); bs = {n: np.empty(B) for n in rows}
+            for b in range(B):
+                samp = rng2.choice(st, size=len(st), replace=True)
+                for n in rows:
+                    bs[n][b] = maps_from([r for t in samp for r in bt[n][t]], core_idx)[0]
+            entry = {"n_images": len(next(iter(rows.values()))), "trees": st, "models": {}}
+            for n in rows:
+                entry["models"][n] = {"mAP50_core": maps_from(rows[n], core_idx)[0],
+                                      "mAP50_core_ci95": [float(np.nanpercentile(bs[n], 2.5)), float(np.nanpercentile(bs[n], 97.5))]}
+            for pr_ in pairs:
+                d = bs[pr_["a"]] - bs[pr_["b"]]
+                entry.setdefault("pairs", []).append({"a": pr_["a"], "b": pr_["b"],
+                                                      "diff": entry["models"][pr_["a"]]["mAP50_core"] - entry["models"][pr_["b"]]["mAP50_core"],
+                                                      "diff_ci95": [float(np.nanpercentile(d, 2.5)), float(np.nanpercentile(d, 97.5))]})
+            split["subsets"][sname] = entry
+        out["exploratory_size_split"] = split
     P["results"].mkdir(parents=True, exist_ok=True)
     write_json(P["results"] / "scores.json", out)
     write_json(P["results"] / "bootstrap.json", {"seed": 0, "B": B, "trees": trees, "mAP50_core": {k: v.tolist() for k, v in boot.items()}})
@@ -864,6 +1029,18 @@ def cmd_score(a):
     if "H1_pair" in out:
         h = out["H1_pair"]
         lines += ["", f"H1 pair: {h['deployed']} - {h['previous']} = {h['diff']:+.4f}  95% CI [{h['diff_ci95'][0]:+.4f}, {h['diff_ci95'][1]:+.4f}]"]
+    for pr_ in out.get("pairs", []):
+        lines.append(f"pair (exploratory): {pr_['a']} - {pr_['b']} = {pr_['diff']:+.4f}  95% CI [{pr_['diff_ci95'][0]:+.4f}, {pr_['diff_ci95'][1]:+.4f}]")
+    if "exploratory_size_split" in out:
+        sp_ = out["exploratory_size_split"]
+        lines += ["", f"exploratory split by lesion size (threshold: median relative box side {sp_['threshold_median_relative_box_side']:.4f}; "
+                      f"{sp_['images_without_gt_excluded']} images without boxes excluded):"]
+        for sname, e in sp_["subsets"].items():
+            lines.append(f"  {sname}: {e['n_images']} images, {len(e['trees'])} trees")
+            for n, m in e["models"].items():
+                lines.append(f"    {n:<10} mAP50-core {m['mAP50_core']:.4f}  [{m['mAP50_core_ci95'][0]:.4f}, {m['mAP50_core_ci95'][1]:.4f}]")
+            for pr_ in e.get("pairs", []):
+                lines.append(f"    {pr_['a']} - {pr_['b']} = {pr_['diff']:+.4f}  95% CI [{pr_['diff_ci95'][0]:+.4f}, {pr_['diff_ci95'][1]:+.4f}]")
     (P["results"] / "report.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n" + "\n".join(lines))
 
@@ -1145,7 +1322,7 @@ def cmd_eval_folder(a):
     print(json.dumps(r, indent=2, ensure_ascii=False))
 
 
-def write_train_files(name, merged, train_imgs, seed, out, extra_info):
+def write_train_files(name, merged, train_imgs, seed, out, extra_info, overrides=None):
     out = Path(out or DATA / "train" / name); out.mkdir(parents=True, exist_ok=True)
     (out / "train.txt").write_text("".join(p.resolve().as_posix() + "\n" for p in train_imgs), encoding="utf-8")
     val = (Path(merged) / "images" / "val").resolve()
@@ -1155,6 +1332,9 @@ def write_train_files(name, merged, train_imgs, seed, out, extra_info):
     rec = prelock()["recipe_for_v1_v3"]
     kw = {k: v for k, v in rec["fixed_args"].items() if k not in ("mode", "task", "model")}
     kw.update({"data": (out / "data.yaml").resolve().as_posix(), "seed": seed, "name": name})
+    overrides = {k: v for k, v in (overrides or {}).items() if v is not None}
+    if overrides:                                   # exploratory shadow models only (e.g. imgsz 1280); recorded, never a deployed v_k
+        kw.update(overrides); extra_info = {**extra_info, "exploratory_overrides": overrides}
     (out / "train_kwargs.json").write_text(json.dumps(kw, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
     info = {"name": name, "created": now_myt(), "n_train_images": len(train_imgs), "seed": seed,
             "ultralytics_version": rec["ultralytics_version"], "model": rec["fixed_args"]["model"], **extra_info}
@@ -1169,7 +1349,10 @@ def cmd_build_train(a):
     added = {}
     for s in a.sites:
         si = site_train_images(s); imgs += si; added[s] = len(si)
-    write_train_files(a.name, a.merged, imgs, a.seed, a.out, {"kind": "version", "sites_added": added})
+    if (a.imgsz or a.batch or a.cache) and re.fullmatch(r"v\d+", a.name):
+        die("v0/v1/v2/v3 这些部署版本必须用预锁定的配方，不能改 imgsz/batch/cache。影子模型请用别的名字，例如 v0_1280。")
+    write_train_files(a.name, a.merged, imgs, a.seed, a.out, {"kind": "version", "sites_added": added},
+                      {"imgsz": a.imgsz, "batch": a.batch, "cache": a.cache})
 
 
 def cmd_build_swap(a):
@@ -1293,20 +1476,27 @@ def main():
     s.add_argument("--missing-as-empty", action="store_true")
     s.add_argument("--cea-only", action="store_true", help="after lock: only rebuild the CEA copy; product labels must be unchanged")
     s.add_argument("--cea-drop-unresolved", action="store_true", help="drop leaf_spot_blight / web_blight boxes from the CEA copy")
+    s.add_argument("--cea-allow-changes", action="store_true",
+                   help="with --cea-only: accept corrections made after this study's lock (CEA copy only; counted in the report)")
     s = sub.add_parser("split"); s.add_argument("--site", required=True); s.add_argument("--final"); s.add_argument("--missing-as-empty", action="store_true"); s.add_argument("--force", action="store_true")
     s = sub.add_parser("lock"); s.add_argument("--site", required=True); s.add_argument("--qc-hours", type=float)
     s.add_argument("--visit-date"); s.add_argument("--district"); s.add_argument("--note")
     s = sub.add_parser("score"); s.add_argument("--site", required=True); s.add_argument("--extra", nargs="*"); s.add_argument("--bootstrap", type=int, default=2000)
+    s.add_argument("--pair", nargs="*", help="paired comparisons A:B, e.g. v0_1280:v0")
     s = sub.add_parser("qc"); s.add_argument("--site", required=True)
     s = sub.add_parser("anchor"); s.add_argument("--site", required=True)
     s = sub.add_parser("register"); s.add_argument("--version", required=True); s.add_argument("--onnx", required=True)
     s.add_argument("--server-file"); s.add_argument("--force", action="store_true")
     s = sub.add_parser("build-train"); s.add_argument("--name", required=True); s.add_argument("--merged", required=True)
     s.add_argument("--sites", nargs="*", default=[]); s.add_argument("--seed", type=int, default=0); s.add_argument("--out")
+    s.add_argument("--imgsz", type=int, help="exploratory shadow model only (e.g. 1280); not allowed for v0..v3")
+    s.add_argument("--batch", type=int, help="exploratory shadow model only"); s.add_argument("--cache", help="exploratory shadow model only (ram/disk)")
     s = sub.add_parser("build-swap"); s.add_argument("--name", required=True); s.add_argument("--merged", required=True)
     s.add_argument("--manifest", required=True); s.add_argument("--base-sites", nargs="*", default=[]); s.add_argument("--new-site", required=True)
     s.add_argument("--seed", type=int, default=0); s.add_argument("--removal-seed", type=int, default=0); s.add_argument("--out")
     sub.add_parser("summary")
+    s = sub.add_parser("release"); s.add_argument("--site")
+    s.add_argument("--private-classes", nargs="*", help="classes whose photos are held back (default: the five rare classes)")
     s = sub.add_parser("tidy"); s.add_argument("--apply", action="store_true")
     s = sub.add_parser("farmer"); s.add_argument("--site", required=True); s.add_argument("--even-only", action="store_true")
     s = sub.add_parser("export-cea"); s.add_argument("--site", required=True)
@@ -1319,7 +1509,7 @@ def main():
     {"status": cmd_status, "rename": cmd_rename, "pick-scratch": cmd_pick_scratch, "merge-qc": cmd_merge_qc, "lock-scratch": cmd_lock_scratch,
      "split": cmd_split, "lock": cmd_lock, "score": cmd_score, "qc": cmd_qc, "anchor": cmd_anchor, "register": cmd_register,
      "build-train": cmd_build_train, "build-swap": cmd_build_swap, "summary": cmd_summary,
-     "pack-train": cmd_pack_train, "export-cea": cmd_export_cea, "farmer": cmd_farmer, "tidy": cmd_tidy, "eval-folder": cmd_eval_folder, "preview": cmd_preview}[a.cmd](a)
+     "pack-train": cmd_pack_train, "export-cea": cmd_export_cea, "farmer": cmd_farmer, "tidy": cmd_tidy, "release": cmd_release, "eval-folder": cmd_eval_folder, "preview": cmd_preview}[a.cmd](a)
 
 
 if __name__ == "__main__":

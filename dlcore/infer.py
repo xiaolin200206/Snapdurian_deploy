@@ -21,13 +21,13 @@ def load_image(p):
     return im.convert("RGB")
 
 
-def letterbox(im):
+def letterbox(im, imgsz=IMGSZ):
     w, h = im.size
-    r = min(IMGSZ / h, IMGSZ / w)
+    r = min(imgsz / h, imgsz / w)
     nw, nh = round(w * r), round(h * r)
-    dw, dh = (IMGSZ - nw) / 2, (IMGSZ - nh) / 2
+    dw, dh = (imgsz - nw) / 2, (imgsz - nh) / 2
     left, top = round(dw - 0.1), round(dh - 0.1)
-    canvas = Image.new("RGB", (IMGSZ, IMGSZ), (114, 114, 114))
+    canvas = Image.new("RGB", (imgsz, imgsz), (114, 114, 114))
     canvas.paste(im.resize((nw, nh), Image.BILINEAR), (left, top))
     x = np.asarray(canvas, dtype=np.float32).transpose(2, 0, 1)[None] / 255.0
     return np.ascontiguousarray(x), r, left, top
@@ -59,7 +59,13 @@ class Detector:
             opts.intra_op_num_threads = threads
         self.path = Path(model_path)
         self.session = ort.InferenceSession(str(self.path), opts, providers=["CPUExecutionProvider"])
-        self.input_name = self.session.get_inputs()[0].name
+        inp = self.session.get_inputs()[0]
+        self.input_name = inp.name
+        shp = list(inp.shape)                      # [1, 3, H, W]; the model's own input size (640 for v0..v3, 1280 for the shadow models)
+        hw = [d for d in shp[-2:] if isinstance(d, int)]
+        if len(hw) != 2 or hw[0] != hw[1]:
+            raise ValueError(f"{self.path.name}: expected a fixed square input, got {shp}")
+        self.imgsz = hw[0]
         meta = self.session.get_modelmeta().custom_metadata_map
         import ast
         names = ast.literal_eval(meta["names"]) if "names" in meta else {}
@@ -67,7 +73,7 @@ class Detector:
 
     def predict(self, im, conf=0.001, iou=0.7, max_det=300, multi_label=True):
         """-> boxes (n, 4) xyxy in original pixels, scores (n,), classes (n,)"""
-        x, r, left, top = letterbox(im)
+        x, r, left, top = letterbox(im, self.imgsz)
         p = self.session.run(None, {self.input_name: x})[0][0].T          # (anchors, 4 + nc)
         cls_scores = p[:, 4:]
         if multi_label:

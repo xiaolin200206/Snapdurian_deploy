@@ -65,3 +65,26 @@ These refine prelock section 4; they apply to every photograph of every site, te
 4. Added and changed boxes may carry a `_missing` / `_modify` suffix in the annotation tool for the annotator's own
    bookkeeping; suffixes are removed when the export is merged (`dl.py merge-qc`). QC counts (H2) are always computed
    by matching the final labels against the stored pre-labels, never from the suffixes.
+
+## D6 — Exploratory input-size comparison, 640 vs 1280 (recorded 2026-11-02, before any 1280 model was trained or scored)
+
+Motivation: the deployed models see each photograph letterboxed to 640 x 640, and the Pahang QC showed that most of
+what v0 missed were small lesions in wider shots. This comparison is **exploratory**: not part of H1–H4, no 1280 model
+is deployed or used for pre-labelling during the study, and nothing in the prelock changes.
+
+- **Shadow models.** For each deployed version v_k, a shadow model v_k_1280 is trained on exactly v_k's training set
+  with v_k's recipe (same Ultralytics version, `yolo11s.pt` start, 150 epochs, AdamW, lr0 0.001, seed 0, close_mosaic 10,
+  same fixed validation split), changing only `imgsz` 640 → 1280 and, if GPU memory requires it, `batch` 16 → 8
+  (Ultralytics accumulates gradients to a nominal batch of 64, so the optimisation schedule is unchanged) and
+  `cache` ram → disk. The exact arguments of every shadow run are in its `build_info.json` (`exploratory_overrides`).
+- **Scoring.** v_k_1280 is scored with the locked evaluator on the same even-tree test set as v_k, at the same site
+  (v0_1280 vs v0 on Pahang, v1_1280 vs v1 on Penang, and so on); the only difference in evaluation is the letterbox
+  size, which is read from each ONNX model's input shape. Reported: mAP50-core of both, and the paired tree-bootstrap
+  difference v_k_1280 − v_k (2000 replicates, seed 0), overall and on two image subsets split at the site median of
+  each image's median relative ground-truth box side ("near" = larger lesions, "far" = smaller lesions; images
+  without boxes excluded). The split depends on the labels only, never on a model.
+- **Decision rule, fixed now.** 1280 is adopted for the product after the study if, pooled over the sites where both
+  models were scored, the mean paired difference v_k_1280 − v_k is > 0 with a 95% bootstrap interval excluding 0, and
+  the server's median per-photo inference time at 1280 is at most 3 x that at 640 on the same CPU. Otherwise 640 stays.
+- Shadow models are kept in `freeze/<name>/` and listed with their SHA-256 in `results/<site>/scores.json`
+  (`kind: extra`); they are not entered in `versions_log.md`.
