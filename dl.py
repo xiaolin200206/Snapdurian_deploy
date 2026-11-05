@@ -1421,8 +1421,9 @@ def cmd_summary(a):
         if len(boots) == len(diffs):
             m = np.mean(np.stack(boots), 0)
             L.append(f"- bootstrap 95% CI of the mean (sites resampled independently): {np.nanpercentile(m, 2.5):+.4f} to {np.nanpercentile(m, 97.5):+.4f}")
-        L.append(f"- **H1 {'supported' if np.mean(diffs) > 0 else 'not supported'}** (primary criterion: mean > 0)"
-                 + ("" if len(diffs) == 3 else f" — only {len(diffs)} of 3 sites available"))
+        planned = max(3, sum(1 for s_ in S if S[s_]["cfg"]["order"] >= 2 and not S[s_]["cfg"].get("revisit")))
+        L.append(f"- **H1 {'supported' if np.mean(diffs) > 0 else 'not supported'}** (primary criterion: mean > 0 over all new-farm sites, D7)"
+                 + ("" if len(diffs) >= planned else f" — only {len(diffs)} of {planned} planned sites available"))
     L += ["", "## H2"]
     for s in order:
         q = S[s].get("qc")

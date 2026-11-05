@@ -88,3 +88,26 @@ is deployed or used for pre-labelling during the study, and nothing in the prelo
   the server's median per-photo inference time at 1280 is at most 3 x that at 640 on the same CPU. Otherwise 640 stays.
 - Shadow models are kept in `freeze/<name>/` and listed with their SHA-256 in `results/<site>/scores.json`
   (`kind: extra`); they are not entered in `versions_log.md`.
+
+## D7 — Klang (Selangor) added as site 3; Malacca and Johor move to sites 4 and 5 (recorded 2026-11-05, before Klang is visited)
+
+- **New site.** A farm near Klang, Selangor (introduced by the field practitioner; owner contacted 2026-11-05) is
+  visited about 2026-11-14 as **site 3, pre-labelled by v2** (v2 = v1's training set + all Penang images, v0 recipe,
+  registered and pushed before the visit). Site name `klang`, file-name prefix `kg1`. The new-farm rule applies: if the
+  farm turns out to be one already in the training corpus, the site is excluded from H1/H2 and its images are used
+  for training only. H1 at Klang: v2 vs v1 on the Klang even-tree test set.
+- **Series extended.** The prelock planned four sites and three H1 steps. The series is now Pahang (v0), Penang (v1),
+  Klang (v2), then Malacca and Johor as sites 4 and 5 (planned pre-labelling versions v3 and v4; a visit to both in
+  one trip would be handled as D1 described: the second farm pre-labelled by the latest available version, its newer
+  version scored offline). Order and versions for sites 4 and 5 are provisional and will be confirmed in a deviation
+  recorded before each visit. D1 as written (Malacca then Johor the next day, Johor by v2) no longer applies.
+- **Hypotheses.** H1's primary criterion becomes the mean of the paired differences over **all** new-farm sites from
+  site 2 on (at least the three originally planned); each site's pair is still (deployed version) − (previous version).
+  H2 compares the **last new-farm site** with Pahang. H3 stays at the three originally planned steps (sites 2–4,
+  now Penang, Klang, Malacca). D6 shadow models continue: one v_k_1280 per deployed v_k, scored on the site it shadows.
+- **Possible revisit.** If time allows, a final version (v5 or the last trained) may be tested on a farm already in
+  the training data (Pahang or Seremban). A revisit is not a new-farm site: it is excluded from H1 and H2 and reported
+  separately as exploratory (within-farm change over time), with its own deviation recorded before the visit.
+- **CEA.** Klang is not part of the CEA prospective series unless the CEA repository pre-registers it before the
+  visit; otherwise Klang's odd-numbered trees are used for training only. The odd/even rule and all other prelock
+  rules are unchanged.

@@ -1,14 +1,16 @@
 {
   "site": "malacca",
   "state": "Malacca",
-  "order": 3,
+  "order": 4,
   "prefix": "ml1",
-  "deployed_version": "v2",
-  "previous_version": "v1",
+  "deployed_version": "v3",
+  "previous_version": "v2",
   "versions_to_score": [
     "v0",
     "v1",
-    "v2"
+    "v2",
+    "v3"
   ],
-  "scratch_seed": 0
+  "scratch_seed": 0,
+  "deviation": "D7: provisional order and version; confirmed (and D1-style handling applied if visited in one trip with Johor) in a deviation recorded before the visit"
 }

@@ -1,0 +1,59 @@
+{
+  "site": "pahang",
+  "created": "2026-11-04T20:59:12+08:00",
+  "photos": 320,
+  "even_only": false,
+  "photos_with_disease": 301,
+  "app_reported_something": 283,
+  "app_named_a_present_disease": 270,
+  "app_named_all": 121,
+  "photos_without_disease": 19,
+  "false_alarm_on_healthy": 8,
+  "per_class": {
+    "algal_spot": {
+      "photos_with_it": 162,
+      "app_said_it": 118,
+      "false_alarms": 1
+    },
+    "leaf_spot_blight": {
+      "photos_with_it": 260,
+      "app_said_it": 168,
+      "false_alarms": 1
+    },
+    "leafhopper_damage": {
+      "photos_with_it": 26,
+      "app_said_it": 15,
+      "false_alarms": 8
+    },
+    "pink_disease": {
+      "photos_with_it": 0,
+      "app_said_it": 0,
+      "false_alarms": 1
+    },
+    "psyllid": {
+      "photos_with_it": 44,
+      "app_said_it": 33,
+      "false_alarms": 14
+    },
+    "psyllid_damage": {
+      "photos_with_it": 90,
+      "app_said_it": 20,
+      "false_alarms": 3
+    },
+    "root_disease": {
+      "photos_with_it": 0,
+      "app_said_it": 0,
+      "false_alarms": 2
+    },
+    "web_blight": {
+      "photos_with_it": 7,
+      "app_said_it": 7,
+      "false_alarms": 22
+    },
+    "weevil_damage": {
+      "photos_with_it": 34,
+      "app_said_it": 26,
+      "false_alarms": 17
+    }
+  }
+}

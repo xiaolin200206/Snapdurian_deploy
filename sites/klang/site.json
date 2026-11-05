@@ -1,0 +1,15 @@
+{
+  "site": "klang",
+  "state": "Selangor",
+  "order": 3,
+  "prefix": "kg1",
+  "deployed_version": "v2",
+  "previous_version": "v1",
+  "versions_to_score": [
+    "v0",
+    "v1",
+    "v2"
+  ],
+  "scratch_seed": 0,
+  "deviation": "D7 (sequential/deviations.md): added as site 3 before the visit; Malacca and Johor move to sites 4 and 5"
+}
