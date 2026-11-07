@@ -3,13 +3,13 @@
 
   python dl.py status                                   每个站做到哪一步了
   python dl.py rename       --site pahang               PWA 导出 → 按树号改名（p1t3_…），原始预标另存
-  python dl.py pick-scratch --site pahang               抽 40 张单数号树的图做“从零标”（H4，和 CEA 共用）
-  python dl.py lock-scratch --site pahang               从零标完 → 锁定（必须在 QC 这些图之前）
+  （pick-scratch / lock-scratch / anchor：H4 已取消，D4，不用跑）
+  python dl.py merge-qc     --site pahang --export data/sites/pahang/qc_export.zip --missing-as-empty   Roboflow 导出 → 终标
   python dl.py split        --site pahang               QC 完 → 建双数号树测试集 + 全部树的训练集
   python dl.py lock         --site pahang --qc-hours 8  锁定测试集（打分前，只能一次）
   python dl.py score        --site penang               离线打分（所有已登记的版本 + 可选 --extra）
   python dl.py qc           --site pahang               H2：每张图改了多少框
-  python dl.py anchor       --site pahang               H4：预标有没有把人带偏
+  python dl.py farmer       --site pahang               照片级：App 当时有没有报对
   python dl.py register     --version v1 --onnx best.onnx        登记新版本（去下一站之前 commit）
   python dl.py build-train  --name v1 --merged DIR --sites pahang   生成 v1 的训练列表和配置
   python dl.py build-swap   --name S1 --merged DIR --manifest CSV --new-site pahang   H3 的等量替换
@@ -106,10 +106,10 @@ def cmd_status(a):
         if not (sd / "site.json").exists():
             continue
         cfg = load_site(sd.name); P = site_paths(sd.name)
-        steps = [("rename", P["rename_report"].exists()), ("pick-scratch", P["subset"].exists()),
-                 ("lock-scratch", P["scratch_lock"].exists()), ("split", P["split_report"].exists()),
+        steps = [("rename", P["rename_report"].exists()), ("merge-qc", (P["s"] / "qc_merge_report.txt").exists()),
+                 ("split", P["split_report"].exists()),
                  ("lock", P["lock"].exists()), ("score", (P["results"] / "scores.json").exists()),
-                 ("qc", (P["results"] / "qc.json").exists()), ("anchor", (P["results"] / "anchor.json").exists())]
+                 ("qc", (P["results"] / "qc.json").exists()), ("farmer", (P["results"] / "farmer.json").exists())]
         dep = cfg["deployed_version"]
         print(f"\n{cfg['order']}. {sd.name:<8} 部署 {dep}{'（已登记）' if dep in vl else '（⚠ 还没登记，去之前先 register 并 commit）'}")
         print("   " + "  ".join(("✓ " if ok else "· ") + n for n, ok in steps))
@@ -305,10 +305,10 @@ def cmd_rename(a):
                                                  sort_keys=False), encoding="utf-8")
     print("\n".join(lines))
     print(f"\nRoboflow 用的文件夹：{rf}（整个文件夹拖进 Roboflow，选 YOLO 格式）")
-    print("⚠ 先跑 pick-scratch：它会把从零标的 40 张从这个文件夹里移出去，之后剩下的才能上传 QC。")
+    print("QC 规矩见 sequential/deviations.md D5。导出后：python dl.py merge-qc --site " + a.site + " --export <zip> --missing-as-empty")
     if bad_model:
         print("\n⚠ 有照片不是由这一站应该用的模型预标的。检查服务器上切换模型的时间（admin.py models），再决定怎么处理。")
-    print(f"\n下一步：python dl.py pick-scratch --site {a.site}")
+    print(f"\n下一步：上传 QC（H4 已取消，不用 pick-scratch）。")
 
 
 # ============================================================ scratch subset (H4, shared with CEA)
@@ -519,8 +519,9 @@ def cmd_merge_qc(a):
         lines.append(f"labels in the export that match no renamed image (ignored): {len(extra)}, e.g. {extra[:3]}")
     lines.append("class names in the export (boxes): " + ", ".join(f"{n}={by_name[n]}" for n in names if by_name[n]))
     lines.append("")
-    lines.append("per class (product names; leaf_rot + phomopsis counted as leaf_spot_blight):")
-    lines.append(f"  {'class':<20}{'final':>7}{'v0':>7}{'v0 kept':>9}{'v0 found':>10}{'_missing':>10}{'_modify':>9}")
+    pv = load_site(a.site).get("deployed_version", "pre")
+    lines.append(f"per class (product names; leaf_rot + phomopsis counted as leaf_spot_blight; pre-labels by {pv}):")
+    lines.append(f"  {'class':<20}{'final':>7}{pv:>7}{pv + ' kept':>9}{pv + ' found':>10}{'_missing':>10}{'_modify':>9}")
     for c in range(len(PRODUCT)):
         if not (fin_cls[c] or pre_cls[c]):
             continue
@@ -529,9 +530,9 @@ def cmd_merge_qc(a):
         kept = f"{matched[c] / pre_cls[c]:.0%}" if pre_cls[c] else "-"
         lines.append(f"  {pr:<20}{fin_cls[c]:>7}{pre_cls[c]:>7}{kept:>9}{found:>10}"
                      f"{by_suffix[(pr, 'missing')]:>10}{by_suffix[(pr, 'modify')]:>9}")
-    lines.append("  final = boxes after QC; v0 = v0 pre-labels (conf >= 0.25); "
-                 "v0 kept = share of v0 boxes you kept (same class, IoU >= 0.5); v0 found = share of your final boxes v0 had found")
-    lines.append(f"all boxes vs v0 pre-labels: unchanged {tot['unchanged']}, relabelled {tot['relabelled']}, "
+    lines.append(f"  final = boxes after QC; {pv} = {pv} pre-labels (conf >= 0.25); "
+                 f"{pv} kept = share of {pv} boxes you kept (same class, IoU >= 0.5); {pv} found = share of your final boxes {pv} had found")
+    lines.append(f"all boxes vs {pv} pre-labels: unchanged {tot['unchanged']}, relabelled {tot['relabelled']}, "
                  f"added {tot['added']}, removed {tot['removed']}  (per image: "
                  f"{(tot['added'] + tot['removed'] + tot['relabelled']) / len(imgs):.2f} changes)")
     lines.append("")
@@ -776,7 +777,7 @@ def cmd_split(a):
             print(f"⚠ 距离从零标锁定只有 {days:.1f} 天。预锁定要求从零标的那批图，QC 至少在锁定 3 天之后才开始。"
                   "如果那批图确实是 3 天后才 QC 的，就没问题。")
     else:
-        print("⚠ 还没有从零标的锁定（lock-scratch）。H4 需要它；没有的话这一站不进 H4。")
+        pass  # H4 dropped (D4): no scratch lock expected
     for k in ("test", "train"):
         shutil.rmtree(P[k], ignore_errors=True)
     shutil.rmtree(P["final_lbl"], ignore_errors=True)

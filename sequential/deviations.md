@@ -111,3 +111,18 @@ is deployed or used for pre-labelling during the study, and nothing in the prelo
 - **CEA.** Klang is not part of the CEA prospective series unless the CEA repository pre-registers it before the
   visit; otherwise Klang's odd-numbered trees are used for training only. The odd/even rule and all other prelock
   rules are unchanged.
+
+## D8 — Penang: 8 trees, mostly young (recorded 2026-11-07, after the visit, before any scoring)
+
+- Penang was visited on 2026-11-06 (Barat Daya district, Balik Pulau). The farm is new to the corpus. Only
+  **8 trees** could be photographed (planned: about 20): most trees on the farm are young, and on the older, taller
+  trees the leaves are out of reach from the ground. About 113 photographs were taken; 109 fall inside a tree's time
+  range and are used (`sites/penang/rename_report.txt`, `sites/penang/trees.csv`). Trees 5 and 6 share the minute
+  15:04; photographs in that minute are assigned at the pause between the two trees, by the same rule as at every
+  site.
+- The owner reports spraying little; insect pests (psyllid) were abundant on the photographed trees.
+- Photographs deleted in the annotation tool as background are kept with no boxes (D5 rule 3; merged with
+  `--missing-as-empty`).
+- The tree rule is unchanged: the even trees (t2, t4, t6, t8; 4 trees) are this study's Penang test set and all
+  8 trees go into v2's training set. With 4 test trees the Penang tree-bootstrap interval will be wide; this follows
+  from the farm, not from any choice made after seeing results. Penang stays in H1 (v1 − v0) and is not the H2 site.

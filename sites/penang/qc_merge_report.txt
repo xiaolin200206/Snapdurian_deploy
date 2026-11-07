@@ -1,0 +1,23 @@
+site penang  merge-qc 2026-11-07T23:31:53+08:00
+export: Penang.v1i.yolov8.zip
+images: 109 renamed, 100 with QC labels, 9 missing in export -> treated as empty: ['pg1t1_2026-11-06_02e782d6', 'pg1t2_2026-11-06_4bb3a05b', 'pg1t2_2026-11-06_aa01dbd0', 'pg1t4_2026-11-06_050bfab9', 'pg1t4_2026-11-06_5d3cebbd', 'pg1t5_2026-11-06_6ebe87f4', 'pg1t6_2026-11-06_55001a83', 'pg1t6_2026-11-06_85e265ee', 'pg1t7_2026-11-06_d675ea29']
+images with no box (Null): 11
+labels in the export that match no renamed image (ignored): 1, e.g. ['README.roboflow']
+class names in the export (boxes): algal_missing=32, algal_spot=149, leaf_rot=98, leaf_rot_missing=39, leaf_rot_modify=4, leaf_spot_blight=1, leafhopper=2, phomopsis=294, phomopsis_missing=240, psyllid=13, psyllid_damage=445, psyllid_damage_missing=812, psyllid_missing=208, psyllid_modify=2, weevil_damage=31, weevil_damage_missing=14, weevil_damage_modify=3
+
+per class (product names; leaf_rot + phomopsis counted as leaf_spot_blight; pre-labels by v1):
+  class                 final     v1  v1 kept  v1 found  _missing  _modify
+  algal_spot              181    156      96%       82%        32        0
+  leaf_spot_blight        676    399      93%       55%       279        4
+  leafhopper_damage         2      0        -        0%         0        0
+  psyllid                 223     30      43%        6%       208        2
+  psyllid_damage         1257    445      99%       35%       812        0
+  root_disease              0      4       0%         -         0        0
+  weevil_damage            48     35      89%       65%        14        3
+  final = boxes after QC; v1 = v1 pre-labels (conf >= 0.25); v1 kept = share of v1 boxes you kept (same class, IoU >= 0.5); v1 found = share of your final boxes v1 had found
+all boxes vs v1 pre-labels: unchanged 1005, relabelled 9, added 1373, removed 55  (per image: 13.18 changes)
+
+CEA side (odd trees):
+  boxes not split into Phomopsis / leaf_rot (leaf_spot_blight or web_blight): 1 on odd trees (1 on all trees); dropped from the CEA copy: 1 odd-tree, 0 even-tree boxes
+  numbers for the CEA 3_lock.sh: N_PHOTOS=113 (all photos in the PWA export), N_ANNOTATED=54 (odd-tree photos), N_ADDED=705, N_REMOVED=28, N_RELABELLED=6
+written: C:\Users\Lim Ding Shan\Desktop\conference_preparation\data\sites\penang\final (11 product classes, for dl.py split) and C:\Users\Lim Ding Shan\Desktop\conference_preparation\data\sites\penang\cea_export (split names, for the CEA prepare step)
