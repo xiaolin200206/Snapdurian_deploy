@@ -126,3 +126,15 @@ is deployed or used for pre-labelling during the study, and nothing in the prelo
 - The tree rule is unchanged: the even trees (t2, t4, t6, t8; 4 trees) are this study's Penang test set and all
   8 trees go into v2's training set. With 4 test trees the Penang tree-bootstrap interval will be wide; this follows
   from the farm, not from any choice made after seeing results. Penang stays in H1 (v1 − v0) and is not the H2 site.
+
+## D9 — H3 step-1 models trained after Penang was scored (recorded 2026-11-08, before any H3 model was trained)
+
+- The H3 models of step 1 (S1_s0, S1_s1, S1_s2, R0_s1, R0_s2) were not trained before Penang was scored for H1
+  (v0, v1) and D6 (v1_1280): the workflow checklist did not list H3, and this was noticed on 2026-11-07, after that
+  scoring. H3 is kept as pre-registered.
+- The step-1 models are trained now with the prelock recipe, removal seed 0 and training seeds 0–2, from merged_v5
+  and Pahang only; no Penang image or label enters their training, so having seen Penang's v0/v1 scores cannot
+  influence them. Their SHA-256 are committed in `sequential/h3_models.md` before they are scored on the locked
+  Penang test set (lock unchanged). Adding models to `dl.py score` leaves the v0, v1 and v1_1280 results unchanged
+  (deterministic inference; the tree bootstrap draws one resample per replicate, shared by all models, seed 0).
+- Steps 2 and 3 follow the prelock as written; their hashes are likewise committed before the site is scored.
