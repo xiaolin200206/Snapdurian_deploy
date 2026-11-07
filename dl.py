@@ -102,6 +102,12 @@ def cmd_status(a):
     vl = versions_log()
     reg = ", ".join(f"{k} ({v['sha256'][:8]}…)" for k, v in vl.items()) or "无"
     print(f"已登记的版本：{reg}")
+    ec = RESULTS / "evaluator_check.json"
+    if ec.exists():
+        e = json.loads(ec.read_text(encoding="utf-8"))
+        print(f"评估器核对（预锁定第 5 节）：{'✓ 通过' if e.get('passed') else '✗ 没通过'}，mAP50 差 {e.get('diff', float('nan')):+.4f}")
+    else:
+        print("评估器核对（预锁定第 5 节）：⚠ results/evaluator_check.json 不在仓库里（notebooks/check_evaluator_colab.ipynb）")
     for sd in sorted(SITES_DIR.iterdir(), key=lambda p: load_site(p.name)["order"] if (p / 'site.json').exists() else 99):
         if not (sd / "site.json").exists():
             continue
@@ -113,6 +119,15 @@ def cmd_status(a):
         dep = cfg["deployed_version"]
         print(f"\n{cfg['order']}. {sd.name:<8} 部署 {dep}{'（已登记）' if dep in vl else '（⚠ 还没登记，去之前先 register 并 commit）'}")
         print("   " + "  ".join(("✓ " if ok else "· ") + n for n, ok in steps))
+        sj = P["results"] / "scores.json"
+        names = set(json.loads(sj.read_text(encoding="utf-8")).get("models", {})) if sj.exists() else set()
+        k = cfg["order"] - 1
+        if 1 <= k <= 3 and not cfg.get("revisit"):     # H3 steps 1-3 = sites 2-4 (D7: Penang, Klang, Malacca)
+            ns = sum(f"S{k}_s{i}" in names for i in range(3)); nr = sum(f"R{k - 1}_s{i}" in names for i in (1, 2))
+            print(f"   {'✓' if ns == 3 and nr == 2 else '·'} H3 第 {k} 步：S{k}_s0–s2 打了 {ns}/3，R{k - 1}_s1–s2 打了 {nr}/2"
+                  f"（v{k - 1} 本身算 R{k - 1}_s0；模型只用 v{k - 1} 的训练集，现场之后再训也可以）")
+        sh = f"{dep}_1280"
+        print(f"   {'✓' if sh in names else '·'} 1280 影子 {sh}（D6，探索性）")
 
 
 # ============================================================ rename
@@ -1423,8 +1438,10 @@ def cmd_summary(a):
             m = np.mean(np.stack(boots), 0)
             L.append(f"- bootstrap 95% CI of the mean (sites resampled independently): {np.nanpercentile(m, 2.5):+.4f} to {np.nanpercentile(m, 97.5):+.4f}")
         planned = max(3, sum(1 for s_ in S if S[s_]["cfg"]["order"] >= 2 and not S[s_]["cfg"].get("revisit")))
-        L.append(f"- **H1 {'supported' if np.mean(diffs) > 0 else 'not supported'}** (primary criterion: mean > 0 over all new-farm sites, D7)"
-                 + ("" if len(diffs) >= planned else f" — only {len(diffs)} of {planned} planned sites available"))
+        done = len(diffs) >= planned
+        word = ("supported" if np.mean(diffs) > 0 else "not supported") if done else ("so far positive" if np.mean(diffs) > 0 else "so far not positive")
+        L.append(f"- **H1 {word}** (primary criterion: mean > 0 over all new-farm sites, D7)"
+                 + ("" if done else f" — interim, {len(diffs)} of {planned} planned sites available"))
     L += ["", "## H2"]
     for s in order:
         q = S[s].get("qc")
@@ -1448,19 +1465,7 @@ def cmd_summary(a):
     if steps:
         verdict = ("supported" if wins >= 2 else "not supported") if steps == 3 or wins >= 2 or steps - wins >= 2 else "undecided so far"
         L.append(f"- **H3 {verdict}**: S wins at {wins} of {steps} steps (needs >= 2 of 3)")
-    L += ["", "## H4"]
-    mc = nc = ms = ns = 0
-    for s in order:
-        an = S[s].get("anchor")
-        if an:
-            mc += an["corrected"]["matched_to_prelabel"]; nc += an["corrected"]["boxes"]
-            ms += an["scratch"]["matched_to_prelabel"]; ns += an["scratch"]["boxes"]
-            f3 = lambda x: "n/a" if x is None else f"{x:.3f}"
-            L.append(f"- {s}: corrected {f3(an['corrected']['share'])} ({an['corrected']['boxes']} boxes), scratch {f3(an['scratch']['share'])} ({an['scratch']['boxes']} boxes)")
-    if nc and ns:
-        n_sites = sum(1 for s in order if S[s].get("anchor"))
-        L.append(f"- pooled over {n_sites} site(s): corrected {mc / nc:.3f} vs scratch {ms / ns:.3f} → **H4 {'supported' if mc / nc > ms / ns else 'not supported'}**"
-                 + ("" if n_sites == len(order) else " (not all sites yet)"))
+    L += ["", "## H4", "- dropped before any H4 data were collected or locked (D4, sequential/deviations.md)"]
     RESULTS.mkdir(exist_ok=True)
     (RESULTS / "summary.md").write_text("\n".join(L) + "\n", encoding="utf-8")
     print("\n".join(L))

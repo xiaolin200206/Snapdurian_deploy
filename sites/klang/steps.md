@@ -5,10 +5,11 @@
 ## 出发前
 - [ ] `python dl.py status`：确认 v2 已经登记（versions_log.md 里有哈希，而且已经 push）。没有的话先 `python dl.py register --version v2 --onnx <文件>`，commit + push。
 - [ ] 服务器上 `admin.py models`：标着“正在使用”的是 v2。
+- [ ] 1280 影子 `v2_1280` 的哈希已经写进 `sequential/shadow_models.md` 并 push（D6）。
 - [ ] 把 `trees_template.csv` 复制成 `trees.csv`，现场一边走一边填每棵树的开始、结束时间（手机看时间就行）。
 
 ## 现场
-- [ ] 先确认是语料里没有的新农场（Mr Sin 的园子）。每棵树第一张拍树干或树牌当分隔；按走的顺序编号 t1, t2, …；双数号树是这一篇的测试集；单数号树只进训练（CEA 没有给 Klang 预锁定的话）。
+- [ ] 先确认是语料里没有的新农场。每棵树第一张拍树干或树牌当分隔；按走的顺序编号 t1, t2, …；双数号树是这一篇的测试集；单数号树只进训练（CEA 没有给 Klang 预锁定的话）。
 - [ ] 15 棵以上、200 张封顶、每张拍不一样的；比例照 Pahang；拍照时别看 App 的结果决定拍什么。
 - [ ] 全部用 PWA 拍；位置共享打开。
 - [ ] **全部树拍完以后：换手机对照（偏差 D2）**：回头挑 2–3 棵拍过的树，每棵 iPhone 拍 10 张、小米拍 10 张（有症状的叶子）。
@@ -24,13 +25,12 @@
 4. （同上。）
 5. 把 `renamed/images` + `renamed/prelabels` 作为预标导入标注工具，逐框 QC 全部照片，规矩照 D5（只标有把握的；默认整图大小；分不清 Phomopsis / leaf_rot 就标 leaf_spot_blight；没病斑点 Null）。
    导出（Roboflow YOLO 格式）到 `data/sites/klang/qc_export.zip`，然后 `python dl.py merge-qc --site klang --export data/sites/klang/qc_export.zip --missing-as-empty`。CEA 那份（单数号树、拆成 Phomopsis / Leaf_rot）在另一个仓库照 CEA 的流程做。
-6. `python dl.py split --site klang` → 双数号树测试集 + 全部树的训练集，报告写进 `split_report.txt`。
-7. `python dl.py lock --site klang --qc-hours <小时> --visit-date <YYYY-MM-DD> --district "<县/区>"`
+6. `python dl.py split --site klang --missing-as-empty` → 双数号树测试集 + 全部树的训练集，报告写进 `split_report.txt`。
+7. `python dl.py lock --site klang --visit-date <YYYY-MM-DD> --district "<县/区>"`（知道 QC 花了几小时就加 `--qc-hours <小时>`）
    → **commit `lock.json`，把打印出来的 SHA-256 发邮件给自己。**
-8. `python dl.py score --site klang`（CPU 就行；会验证锁定和每个模型的哈希）。
-   H3（第 2 步）：把等量替换模型和 v1 配方的另外两个种子一起打分：
-   `python dl.py score --site klang --extra S2_s0=<onnx> S2_s1=<onnx> S2_s2=<onnx> R1_s1=<onnx> R1_s2=<onnx>`
-   （v1 本身就是 R1 的 s0，已经在登记的版本里，不用再给。）
+8. 打分（CPU 就行；会验证锁定和每个模型的哈希），一条命令把 1280 影子和 H3 第 2 步的模型一起算：
+   `python dl.py score --site klang --extra v2_1280=<onnx> S2_s0=<onnx> S2_s1=<onnx> S2_s2=<onnx> R1_s1=<onnx> R1_s2=<onnx> --pair v2_1280:v2`
+   （v1 本身就是 R1 的 s0，已经在登记的版本里，不用再给。H3 的模型还没训好的话，先不带它们打，训好再带上重跑，v0–v2 的分数不会变。）
 9. `python dl.py qc --site klang`（H2）和 `python dl.py farmer --site klang`。
 10. commit `results/klang/`。
 
@@ -39,6 +39,7 @@
 - 在 Colab 用 `notebooks/train_version_colab.ipynb` 训练并导出 ONNX。
 - `python dl.py register --version v3 --onnx <导出的 best.onnx> --server-file <服务器上的文件名>`
 - **commit + push `sequential/versions_log.md` 之后**，才去下一站；服务器上 `admin.py use` 这个文件。
+- 1280 影子 `v3_1280`：同一份数据、`train_version_colab.ipynb` 里设 `NAME = "v3_1280"`、`IMGSZ = 1280`、`BATCH = 8`，哈希写进 `sequential/shadow_models.md`，和 v3 一起 push。
 - H3（可以之后再做）：等量替换 S3，三个种子（把 `_s0` 和 `--seed 0` 换成 1、2 再跑两次）：
   `python dl.py build-swap --name S3_s0 --merged data/merged_v5 --manifest data/durian_11cls_640_v5_manifest.csv --base-sites pahang penang --new-site klang --seed 0`
   v2 配方的另外两个种子：`python dl.py build-train --name R2_s1 --merged data/merged_v5 --sites pahang penang --seed 1`（s2 同理）。

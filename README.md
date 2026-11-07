@@ -1,7 +1,8 @@
 # Snapdurian_deploy
 
 A pre-registered study of a **deploy–collect–retrain loop** for a durian leaf-disease detector running in a
-progressive web app (SnapDurian), across four Malaysian states (Pahang → Penang → Malacca → Johor), 2026.
+progressive web app (SnapDurian), on new farms in Malaysia, 2026: Pahang → Penang → Klang (Selangor) → Malacca →
+Johor (sites 4 and 5 provisional; see deviation D7).
 
 After each field site the detector is retrained on everything collected so far and redeployed before the next
 site. The study asks how much each update improves accuracy on the next, not-yet-visited farm, and how the
@@ -9,41 +10,45 @@ human correction effort changes as the model improves.
 
 **The protocol is fixed in [`sequential/prelock_note.md`](sequential/prelock_note.md)** (with
 [`sequential/seq_prelock.json`](sequential/seq_prelock.json)), committed before the first site was visited.
-If anything in this README disagrees with the prelock, the prelock wins.
+Every later change of plan is in [`sequential/deviations.md`](sequential/deviations.md) (D1–D8 so far), recorded
+before the data it affects exist. If this README disagrees with the prelock plus deviations, those win.
 
-## Hypotheses (summary; exact criteria in the prelock)
+## Hypotheses (summary; exact criteria in the prelock and deviations)
 
 | | Prediction | Test data |
 |---|---|---|
-| H1 | Each redeployed version beats the previous one on the next farm (mAP50 over core classes) | even-numbered trees of sites 2–4 |
-| H2 | Box corrections per image fall from the first site (v0 pre-labels) to the last (v3) | all photographs of each site |
-| H3 | Swapping old images for the same number of new-farm images beats the previous recipe (test of Ruigrok et al. 2023) | even-numbered trees of sites 2–4 |
-| H4 | Pre-labels anchor the annotator: corrected labels agree more with the model than from-scratch labels | 40 images per site |
+| H1 | Each redeployed version beats the previous one on the next farm (mAP50 over core classes); primary criterion: mean of the paired differences over all new-farm sites > 0 (D7) | even-numbered trees, sites 2–5 |
+| H2 | Box corrections per image are lower at the last new-farm site than at the first (v0 pre-labels) | all photographs of each site |
+| H3 | Swapping old images for the same number of new-farm images beats the previous recipe (test of Ruigrok et al. 2023); 3 steps, scored at Penang, Klang, Malacca (D7) | even-numbered trees |
+| H4 | *Dropped before any H4 data were collected (D4).* | – |
+
+Exploratory, not part of the predictions: 640 vs 1280 input size (D6; shadow models in
+[`sequential/shadow_models.md`](sequential/shadow_models.md)) and what the app told the grower per photo
+(`dl.py farmer`).
 
 A companion prospective test of farm-level generalisation uses the **odd-numbered trees** of the same visits
 ([durian-site-split](https://github.com/xiaolin200206/durian-site-split)); the two never share test images.
 
 ## Integrity chain
 
-1. **Prelock** (this repository's first commit): v0 hashes, training recipe, evaluation rules, H1–H4.
+1. **Prelock** (this repository's first commit): v0 hashes, training recipe, evaluation rules, hypotheses.
 2. **Version log** ([`sequential/versions_log.md`](sequential/versions_log.md)): the SHA-256 of every deployed
-   version is committed before the site where it is first used.
-3. **Per-site locks** (`sites/<site>/scratch_lock.json`, `sites/<site>/lock.json`): fingerprints of the
-   from-scratch labels (before QC), of the test set, of all final labels and of the raw pre-labels.
+   version is committed before the site where it is first used. Shadow models: `sequential/shadow_models.md`.
+3. **Per-site locks** (`sites/<site>/lock.json`): fingerprints of the test set, of all final labels and of the raw
+   pre-labels; the SHA-256 of each lock is also e-mailed to the author on the day it is made.
 4. **Scoring** (`dl.py score`) refuses to run if the test set, a model or the version log does not match.
-5. **Deviations** ([`sequential/deviations.md`](sequential/deviations.md)): any change of plan is recorded
-   before the data it affects exist; the prelock files are never edited.
+5. **Deviations** (`sequential/deviations.md`): the prelock files are never edited.
 
 ## Layout
 
 ```
-sequential/      prelock (protocol + JSON) and the version log
-sites/<site>/    site.json, steps.md (step-by-step guide), trees.csv, reports and locks
+sequential/      prelock (protocol + JSON), version log, deviations, shadow models
+sites/<site>/    site.json, steps.md (step-by-step guide), trees.csv, reports and lock
 dlcore/          inference (server-identical pre-processing), metrics (Ultralytics-style AP50), helpers
-dl.py            one command per step: rename, pick-scratch, lock-scratch, split, lock, score, qc, anchor,
-                 register, build-train, build-swap, pack-train, eval-folder, summary, status
-notebooks/       Colab: evaluator check against Ultralytics; training v1–v3 and H3 models
-results/<site>/  scores, bootstrap replicates, QC and anchoring results; results/summary.md
+dl.py            one command per step: status, rename, merge-qc, split, lock, score, qc, farmer, export-cea,
+                 register, build-train, build-swap, pack-train, eval-folder, preview, summary, release, tidy
+notebooks/       Colab: evaluator check against Ultralytics; training of versions, shadow and H3 models
+results/<site>/  scores, bootstrap replicates, QC and per-photo app results; results/summary.md
 data/, models/   local only (not committed): images, labels, ONNX files
 ```
 
@@ -56,8 +61,8 @@ python dl.py register --version v0 --onnx freeze/v0/durian_11cls_640_v5.onnx   #
 ```
 
 Then follow `sites/<site>/steps.md` for each site, in order. Scoring runs on CPU (ONNX Runtime). Training runs
-in Colab with Ultralytics 8.4.182 (`notebooks/train_version_colab.ipynb`). Before any site is scored, run
-`notebooks/check_evaluator_colab.ipynb` once and commit `results/evaluator_check.json`.
+in Colab with Ultralytics 8.4.182 (`notebooks/train_version_colab.ipynb`). The evaluator is checked once against
+Ultralytics validation of v0 (`notebooks/check_evaluator_colab.ipynb`, result in `results/evaluator_check.json`).
 
 ## Data and model availability
 
@@ -76,8 +81,9 @@ No license has been chosen yet; until one is added, all rights are reserved.
 
 ### 作者用：每一站的顺序（详细的看 `sites/<站>/steps.md`）
 
-1. 出发前：`python dl.py status`，这一站要用的版本已经登记、已经 push。
+1. 出发前：`python dl.py status`，这一站要用的版本已经登记、已经 push；影子模型的哈希已经写进 shadow_models.md。
 2. 现场：按走的顺序给树编号；填 `sites/<站>/trees.csv`（每棵树的开始和结束时间）。
-3. 回来：导出 → `rename` → `pick-scratch`（commit）→ 从零标 → `lock-scratch`（commit）→ 隔 3 天 QC →
-   `split` → `lock`（commit + 发邮件）→ `score` → `qc` → `anchor` → commit `results/`。
+3. 回来：服务器导出 → `rename` → Roboflow 逐框 QC（D5 规则）→ `merge-qc` → `split` → `lock`（commit + push + 发邮件）
+   → `score`（带上 1280 影子和 H3 的模型）→ `qc` → `farmer` → commit `results/`。
 4. 训练下一版：`pack-train` → Colab 训练 → `register` → **commit + push 之后**才去下一站。
+   同一份数据顺便训 1280 影子和 H3 的模型（`dl.py status` 会显示还差哪些）。

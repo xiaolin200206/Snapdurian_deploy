@@ -1,5 +1,7 @@
 # Pahang（第 1 站，部署 v0，文件名前缀 `p1`）
 
+> Pahang 已完成。这份是出发前写的原始步骤；之后的改动：H4 取消（D4），所以第 3–4 步（pick-scratch、lock-scratch、从零标、隔 3 天）和 `anchor` 不再做；QC 导出后用 `merge-qc`，打分后加 `farmer`；1280 影子模型见 D6。实际做了什么以各站的报告和 `deviations.md` 为准。
+
 所有命令都在仓库根目录跑。`data/` 和 `models/` 不进 Git。
 
 ## 出发前
