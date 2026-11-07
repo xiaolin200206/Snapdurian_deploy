@@ -1,0 +1,21 @@
+{
+  "site": "penang",
+  "created": "2026-11-07T23:48:19+08:00",
+  "n_images": 109,
+  "all_classes": {
+    "unchanged": 1005,
+    "relabelled": 9,
+    "added": 1373,
+    "removed": 55
+  },
+  "rate_per_image": 13.18348623853211,
+  "core_classes": {
+    "unchanged": 974,
+    "relabelled": 6,
+    "added": 1359,
+    "removed": 50
+  },
+  "rate_per_image_core": 12.98165137614679,
+  "qc_hours": null,
+  "prelabel_threshold": "as exported by the PWA (conf >= 0.25)"
+}

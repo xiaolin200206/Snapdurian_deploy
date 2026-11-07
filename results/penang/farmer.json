@@ -1,0 +1,49 @@
+{
+  "site": "penang",
+  "created": "2026-11-07T23:43:18+08:00",
+  "photos": 109,
+  "even_only": false,
+  "photos_with_disease": 98,
+  "app_reported_something": 98,
+  "app_named_a_present_disease": 98,
+  "app_named_all": 30,
+  "photos_without_disease": 11,
+  "false_alarm_on_healthy": 4,
+  "per_class": {
+    "algal_spot": {
+      "photos_with_it": 26,
+      "app_said_it": 26,
+      "false_alarms": 3
+    },
+    "leaf_spot_blight": {
+      "photos_with_it": 81,
+      "app_said_it": 71,
+      "false_alarms": 2
+    },
+    "leafhopper_damage": {
+      "photos_with_it": 2,
+      "app_said_it": 0,
+      "false_alarms": 0
+    },
+    "psyllid": {
+      "photos_with_it": 62,
+      "app_said_it": 11,
+      "false_alarms": 3
+    },
+    "psyllid_damage": {
+      "photos_with_it": 77,
+      "app_said_it": 47,
+      "false_alarms": 0
+    },
+    "root_disease": {
+      "photos_with_it": 0,
+      "app_said_it": 0,
+      "false_alarms": 3
+    },
+    "weevil_damage": {
+      "photos_with_it": 25,
+      "app_said_it": 21,
+      "false_alarms": 1
+    }
+  }
+}

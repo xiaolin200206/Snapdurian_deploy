@@ -17,3 +17,6 @@ Hashes are recorded here before the site on which the shadow model is scored is 
 Results so far: Pahang, v0_1280 - v0 = +0.0366 mAP50-core, 95% tree-bootstrap CI [-0.0186, +0.0648]; on the
 smaller-lesion half of the test images +0.0487 [+0.0173, +0.0789], on the larger-lesion half +0.0116 [-0.1760, +0.0926]
 (`results/pahang/scores.json`, `exploratory_size_split`).
+Penang, v1_1280 - v1 = +0.0212 [-0.2347, +0.0392] (4 test trees, core classes without leafhopper_damage);
+smaller-lesion half +0.0181 [-0.1912, +0.0409], larger-lesion half -0.0070 [-0.0922, +0.0290]
+(`results/penang/scores.json`). The decision rule is applied once, pooled over all sites, after the last site.
