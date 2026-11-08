@@ -1,0 +1,125 @@
+{
+  "n_images": 451,
+  "exif_rotated": 0,
+  "shape_mismatch": [],
+  "duplicate_boxes": 0,
+  "ultralytics_corrupt_images": [],
+  "gt_counts_ours": {
+    "algal_spot": 596,
+    "leaf_spot_blight": 1498,
+    "leafhopper_damage": 34,
+    "pink_disease": 36,
+    "psyllid": 958,
+    "psyllid_damage": 955,
+    "root_disease": 61,
+    "scale_insect": 348,
+    "stem_borer": 20,
+    "web_blight": 45,
+    "weevil_damage": 126
+  },
+  "variants": {
+    "A 服务器预处理（PIL） + 本仓库标注规则": {
+      "mAP50": 0.42648229855285263,
+      "diff_vs_ultralytics": 0.03329083989214687,
+      "AP50": {
+        "algal_spot": 0.5798097180508882,
+        "leaf_spot_blight": 0.5023058387438976,
+        "leafhopper_damage": 0.32299449382138823,
+        "pink_disease": 0.288505157640223,
+        "psyllid": 0.3072298098215329,
+        "psyllid_damage": 0.13362773233238623,
+        "root_disease": 0.4474005744100362,
+        "scale_insect": 0.6792728868777282,
+        "stem_borer": 0.15370141827030182,
+        "web_blight": 0.496304613211971,
+        "weevil_damage": 0.780153040901026
+      }
+    },
+    "A 服务器预处理（PIL） + Ultralytics 标注规则": {
+      "mAP50": 0.42648229855285263,
+      "diff_vs_ultralytics": 0.03329083989214687,
+      "AP50": {
+        "algal_spot": 0.5798097180508882,
+        "leaf_spot_blight": 0.5023058387438976,
+        "leafhopper_damage": 0.32299449382138823,
+        "pink_disease": 0.288505157640223,
+        "psyllid": 0.3072298098215329,
+        "psyllid_damage": 0.13362773233238623,
+        "root_disease": 0.4474005744100362,
+        "scale_insect": 0.6792728868777282,
+        "stem_borer": 0.15370141827030182,
+        "web_blight": 0.496304613211971,
+        "weevil_damage": 0.780153040901026
+      }
+    },
+    "B Ultralytics 预处理（OpenCV INTER_LINEAR） + 本仓库标注规则": {
+      "mAP50": 0.39319204972125626,
+      "diff_vs_ultralytics": 5.910605505032862e-07,
+      "AP50": {
+        "algal_spot": 0.5711348190520894,
+        "leaf_spot_blight": 0.48619659879655086,
+        "leafhopper_damage": 0.29676901720566823,
+        "pink_disease": 0.2737785786812532,
+        "psyllid": 0.2780171188111752,
+        "psyllid_damage": 0.13313240555156067,
+        "root_disease": 0.3634061453273367,
+        "scale_insect": 0.6476979945070271,
+        "stem_borer": 0.07322760997967989,
+        "web_blight": 0.42989227204228697,
+        "weevil_damage": 0.7718599869791906
+      }
+    },
+    "B Ultralytics 预处理（OpenCV INTER_LINEAR） + Ultralytics 标注规则": {
+      "mAP50": 0.39319204972125626,
+      "diff_vs_ultralytics": 5.910605505032862e-07,
+      "AP50": {
+        "algal_spot": 0.5711348190520894,
+        "leaf_spot_blight": 0.48619659879655086,
+        "leafhopper_damage": 0.29676901720566823,
+        "pink_disease": 0.2737785786812532,
+        "psyllid": 0.2780171188111752,
+        "psyllid_damage": 0.13313240555156067,
+        "root_disease": 0.3634061453273367,
+        "scale_insect": 0.6476979945070271,
+        "stem_borer": 0.07322760997967989,
+        "web_blight": 0.42989227204228697,
+        "weevil_damage": 0.7718599869791906
+      }
+    },
+    "C OpenCV INTER_AREA（抗锯齿） + 本仓库标注规则": {
+      "mAP50": 0.4168573163422247,
+      "diff_vs_ultralytics": 0.023665857681518965,
+      "AP50": {
+        "algal_spot": 0.5776653664043745,
+        "leaf_spot_blight": 0.49753322837526925,
+        "leafhopper_damage": 0.3234959472063837,
+        "pink_disease": 0.27402995161041677,
+        "psyllid": 0.29991899249601467,
+        "psyllid_damage": 0.13455014651379382,
+        "root_disease": 0.4238176397566328,
+        "scale_insect": 0.68047667508919,
+        "stem_borer": 0.10374414005635857,
+        "web_blight": 0.4944319620987614,
+        "weevil_damage": 0.775766430157278
+      }
+    },
+    "C OpenCV INTER_AREA（抗锯齿） + Ultralytics 标注规则": {
+      "mAP50": 0.4168573163422247,
+      "diff_vs_ultralytics": 0.023665857681518965,
+      "AP50": {
+        "algal_spot": 0.5776653664043745,
+        "leaf_spot_blight": 0.49753322837526925,
+        "leafhopper_damage": 0.3234959472063837,
+        "pink_disease": 0.27402995161041677,
+        "psyllid": 0.29991899249601467,
+        "psyllid_damage": 0.13455014651379382,
+        "root_disease": 0.4238176397566328,
+        "scale_insect": 0.68047667508919,
+        "stem_borer": 0.10374414005635857,
+        "web_blight": 0.4944319620987614,
+        "weevil_damage": 0.775766430157278
+      }
+    }
+  },
+  "ultralytics_reference_mAP50": 0.39319145866070576
+}
