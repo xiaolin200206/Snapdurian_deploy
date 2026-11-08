@@ -102,8 +102,14 @@ def cmd_status(a):
     vl = versions_log()
     reg = ", ".join(f"{k} ({v['sha256'][:8]}…)" for k, v in vl.items()) or "无"
     print(f"已登记的版本：{reg}")
-    ec = RESULTS / "evaluator_check.json"
-    if ec.exists():
+    ec = RESULTS / "evaluator_check.json"; ed = RESULTS / "evaluator_diagnosis.json"
+    if ed.exists():                                   # D12: implementation check with Ultralytics pre-processing
+        v = json.loads(ed.read_text(encoding="utf-8"))["variants"]
+        b = next(x for k, x in v.items() if k.startswith("B")); a = next(x for k, x in v.items() if k.startswith("A"))
+        ok = abs(b["diff_vs_ultralytics"]) <= 0.01
+        print(f"评估器核对（D10–D12）：实现 {'✓ 通过' if ok else '✗ 没通过'}（用 Ultralytics 的缩图，差 {b['diff_vs_ultralytics']:+.4f}）；"
+              f"打分用服务器缩图（预锁定），差 {a['diff_vs_ultralytics']:+.4f}")
+    elif ec.exists():
         e = json.loads(ec.read_text(encoding="utf-8"))
         print(f"评估器核对（预锁定第 5 节）：{'✓ 通过' if e.get('passed') else '✗ 没通过'}，mAP50 差 {e.get('diff', float('nan')):+.4f}")
     else:

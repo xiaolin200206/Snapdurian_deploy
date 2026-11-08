@@ -180,3 +180,28 @@ is deployed or used for pre-labelling during the study, and nothing in the prelo
   version-1 results are first copied to `results/<site>/evaluator_v1/` and are reported alongside; the version-2
   results are primary, as D10 states. If the check fails again, nothing is scored until the cause is found.
 - The correction depends on no site result: it only makes the evaluator match the implementation the prelock names.
+
+## D12 — Evaluator check: implementation verified; the remaining difference is the pre-registered server pre-processing (recorded 2026-11-08, before any re-scoring)
+
+- With evaluator version 2 (D11) the check still differed by +0.0333 (`results/evaluator_check_v2_failed.json`).
+  A diagnosis on the same merged_v5 validation split with v0 (`notebooks/diagnose_evaluator_colab.ipynb`, output in
+  `results/evaluator_diagnosis.json`) changed one thing at a time:
+  - with Ultralytics' own pre-processing (OpenCV decoding, long side resized to 640 with INTER_LINEAR, `LetterBox`),
+    evaluator version 2 gives all-class mAP50 0.3932, identical to Ultralytics 8.4.182 validation (difference 0.0000;
+    every class within 0.0001);
+  - Ultralytics' label rules (duplicate boxes removed, corrupt images skipped) change nothing on this split;
+  - with the server pre-processing (PIL bilinear) it gives 0.4265 (+0.0333); with OpenCV INTER_AREA 0.4169 (+0.0237).
+- So the whole remaining difference is pre-processing. PIL's bilinear resize filters (anti-aliases) when it shrinks an
+  image; OpenCV INTER_LINEAR, used by Ultralytics for validation and training, does not. The merged_v5 images are
+  mostly phone originals of about 4000 px, shrunk about six times to 640.
+- The prelock fixed both the server-identical pre-processing and the 0.01 check, assuming pre-processing differences
+  would be negligible; on this split they are not. The purpose of the check, that `dl.py score` computes Ultralytics 8.4
+  AP correctly, is met: given the same pre-processed images it reproduces Ultralytics exactly. Scoring therefore keeps
+  the pre-registered server-identical pre-processing, which is what growers receive. No site result was used for this
+  decision; both failed checks and the diagnosis are committed.
+- Pahang and Penang are now re-scored with evaluator version 2 as D11 describes (version-1 results kept in
+  `results/<site>/evaluator_v1/`). Site test images are app uploads (long side at most 1600 px), so the pre-processing
+  effect there may differ from merged_v5 validation. As an exploratory sensitivity analysis, H1 will also be reported
+  with Ultralytics pre-processing after the last site.
+- Exploratory observation: training used OpenCV INTER_LINEAR while the server uses PIL; on merged_v5 validation this
+  mismatch favoured the server pre-processing for v0 (+0.0333 mAP50).

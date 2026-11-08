@@ -10,7 +10,7 @@ human correction effort changes as the model improves.
 
 **The protocol is fixed in [`sequential/prelock_note.md`](sequential/prelock_note.md)** (with
 [`sequential/seq_prelock.json`](sequential/seq_prelock.json)), committed before the first site was visited.
-Every later change of plan is in [`sequential/deviations.md`](sequential/deviations.md) (D1–D11 so far), recorded
+Every later change of plan is in [`sequential/deviations.md`](sequential/deviations.md) (D1–D12 so far), recorded
 before the data it affects exist. If this README disagrees with the prelock plus deviations, those win.
 
 ## Hypotheses (summary; exact criteria in the prelock and deviations)
