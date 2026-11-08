@@ -1,8 +1,13 @@
-"""Detection metrics, written to follow Ultralytics 8.4 validation:
-- matching at IoU 0.5 as in `DetectionValidator.match_predictions` (non-scipy branch),
-- AP per class as in `ap_per_class` / `compute_ap` (101-point interpolation of the precision envelope).
+"""Detection metrics, written to follow Ultralytics 8.4.182 validation:
+- matching at IoU 0.5 as in `BaseValidator.match_predictions` (non-scipy branch): detections in descending
+  confidence order, each claims the best still-unclaimed target of its class with IoU >= 0.5,
+- AP per class as in `ap_per_class` / `compute_ap`: precision envelope with the 8.4 end sentinels (precision drops
+  to 0 at the last recall reached, then stays 0 to recall 1), 101-point interpolation, trapezoidal integration.
 Own implementation (not copied); checked against Ultralytics val by notebooks/check_evaluator_colab.ipynb.
+Evaluator version 2 (D11): version 1 used the Ultralytics 8.3 forms of both functions (IoU-sorted matching, and a
+precision envelope interpolated linearly from the last recall to recall 1), which overstated AP (D10 check, +0.0405).
 """
+EVALUATOR_VERSION = 2
 import numpy as np
 
 EPS = 1e-16
@@ -20,25 +25,32 @@ def box_iou(a, b):
     return inter / (area_a[:, None] + area_b[None, :] - inter + 1e-7)
 
 
-def match_tp(gt_cls, gt_boxes, pr_cls, pr_boxes, thr=0.5):
-    """True-positive flag for each prediction (Ultralytics match_predictions logic at one threshold)."""
-    tp = np.zeros(len(pr_cls), dtype=bool)
-    if not len(gt_cls) or not len(pr_cls):
+def match_tp(gt_cls, gt_boxes, pr_cls, pr_boxes, thr=0.5, conf=None):
+    """True-positive flag for each prediction (Ultralytics 8.4 match_predictions, non-scipy branch, one threshold).
+
+    Predictions are taken in descending confidence (the NMS output order; if `conf` is given they are ordered by it,
+    stable); each claims the best still-unclaimed ground-truth box of the same class if that IoU is >= thr."""
+    n = len(pr_cls)
+    tp = np.zeros(n, dtype=bool)
+    if not len(gt_cls) or not n:
         return tp
-    iou = box_iou(gt_boxes, pr_boxes) * (gt_cls[:, None] == pr_cls[None, :])
-    m = np.array(np.nonzero(iou >= thr)).T
-    if len(m):
-        if len(m) > 1:
-            m = m[iou[m[:, 0], m[:, 1]].argsort()[::-1]]
-            m = m[np.unique(m[:, 1], return_index=True)[1]]
-            m = m[np.unique(m[:, 0], return_index=True)[1]]
-        tp[m[:, 1]] = True
+    iou = box_iou(gt_boxes, pr_boxes) * (np.asarray(gt_cls)[:, None] == np.asarray(pr_cls)[None, :])
+    order = np.arange(n) if conf is None else np.argsort(-np.asarray(conf), kind="stable")
+    claimed = np.zeros(len(gt_cls), dtype=bool)
+    for j in order:
+        if not (iou[:, j] >= thr).any():
+            continue
+        avail = np.where(claimed, 0.0, iou[:, j])
+        k = int(avail.argmax())
+        if avail[k] >= thr:
+            tp[j] = True
+            claimed[k] = True
     return tp
 
 
 def compute_ap(recall, precision):
-    mrec = np.concatenate(([0.0], recall, [1.0]))
-    mpre = np.concatenate(([1.0], precision, [0.0]))
+    mrec = np.concatenate(([0.0], recall, [recall[-1] if len(recall) else 1.0], [1.0]))
+    mpre = np.concatenate(([1.0], precision, [0.0], [0.0]))
     mpre = np.flip(np.maximum.accumulate(np.flip(mpre)))
     x = np.linspace(0, 1, 101)
     trap = getattr(np, "trapezoid", None) or np.trapz

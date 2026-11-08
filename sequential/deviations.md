@@ -155,3 +155,28 @@ is deployed or used for pre-labelling during the study, and nothing in the prelo
   difference is reported, the evaluator is corrected as the prelock specifies, Pahang and Penang are re-scored with
   the corrected evaluator on their unchanged locked test sets, and both the original and the re-scored results are
   reported, the re-scored ones as primary.
+
+## D11 — Evaluator corrected after the D10 check failed (recorded 2026-11-08, before any re-scoring)
+
+- The D10 check failed: all-class mAP50 of v0 on the merged_v5 validation split was 0.4337 with this repository's
+  evaluator and 0.3932 with Ultralytics 8.4.182 (identical to the prelock reference `v0.reference_val_onnx`), a
+  difference of +0.0405 (tolerance 0.01). Every class was higher; the largest differences were in rare classes
+  (root_disease +0.089, stem_borer +0.086, web_blight +0.075). The failed result is kept as
+  `results/evaluator_check_v1_failed.json`.
+- Cause: `dlcore` (evaluator version 1) followed the Ultralytics 8.3 form of two functions, while the prelock names
+  Ultralytics 8.4. (a) `compute_ap`: 8.4 drops the precision envelope to 0 at the last recall reached; version 1
+  interpolated linearly from the last recall to recall 1, adding area that is largest for classes with low recall.
+  (b) `match_predictions`: 8.4 takes detections in descending confidence and lets each claim the best unclaimed target
+  of its class; version 1 used IoU-sorted matching. (c) Version 1 also clipped predicted boxes to the image before
+  matching; Ultralytics validation matches unclipped boxes.
+- Correction (evaluator version 2; `EVALUATOR_VERSION = 2` in `dlcore/metrics.py`): (a)–(c) changed to the
+  Ultralytics 8.4.182 behaviour. Checked against the Ultralytics 8.4.182 functions themselves on about 30,000 random
+  predictions: identical matching and identical AP. Pre-processing is unchanged (server-identical PIL letterbox, as the
+  prelock specifies), so remaining differences from Ultralytics validation come only from pre-processing. Prediction
+  caches carry the evaluator version in their names, so version-1 predictions are not reused. `scores.json` records
+  `evaluator_version`.
+- The check is re-run with the unchanged notebook and committed as `results/evaluator_check.json`. Only if it passes
+  (|difference| <= 0.01) are Pahang and Penang re-scored with version 2 on their unchanged locked test sets. Their
+  version-1 results are first copied to `results/<site>/evaluator_v1/` and are reported alongside; the version-2
+  results are primary, as D10 states. If the check fails again, nothing is scored until the cause is found.
+- The correction depends on no site result: it only makes the evaluator match the implementation the prelock names.

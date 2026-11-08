@@ -39,7 +39,7 @@ from dlcore.common import (CORE, DATA, IDX, IMG_EXT, MERGE, MIN_GT, MODELS, MYT,
                            VERSIONS_LOG, canon, die, export_names, fingerprint, images_in, label_files, load_site,
                            norm_stem, now_myt, prelock, read_yolo, remap_to_product, sha256_file, site_data, tree_of,
                            versions_log, write_json, write_yolo, xywhn_to_xyxy_px)
-from dlcore.metrics import ap_per_class, box_iou, greedy_pairs, match_tp
+from dlcore.metrics import EVALUATOR_VERSION, ap_per_class, box_iou, greedy_pairs, match_tp
 
 SITES_DIR = ROOT / "sites"
 
@@ -871,7 +871,7 @@ def check_lock(a):
 def run_model(path, P, label):
     from dlcore.infer import Detector, load_image
     sha = sha256_file(path)
-    cache = P["preds"] / f"{label}_{sha[:12]}.npz"
+    cache = P["preds"] / f"{label}_{sha[:12]}_e{EVALUATOR_VERSION}.npz"      # evaluator version in the name: v1 caches (clipped boxes) are not reused
     imgs = images_in(P["test"] / "images")
     if cache.exists():
         z = np.load(cache, allow_pickle=False)
@@ -912,7 +912,7 @@ def per_image_records(P, z):
         gcls = merge_cls(g[:, 0]); gbox = xywhn_to_xyxy_px(g, w, h)
         m = z["idx"] == i
         pcls = merge_cls(z["cls"][m]); pbox = z["boxes"][m]; conf = z["scores"][m]
-        tp = match_tp(gcls, gbox, pcls, pbox, 0.5)
+        tp = match_tp(gcls, gbox, pcls, pbox, 0.5, conf)
         gsize = float(np.median(np.sqrt(g[:, 3] * g[:, 4]))) if len(g) else None     # median relative box side; None = no GT box
         recs.append({"stem": p.stem, "tree": tree_of(p.stem), "tp": tp, "conf": conf, "pcls": pcls, "gcls": gcls, "gsize": gsize})
     return recs
@@ -952,7 +952,7 @@ def cmd_score(a):
         models.append((n, Path(p), "extra"))
     recs = {}
     out = {"site": a.site, "created": now_myt(), "lock_sha256": sha256_file(P["lock"]),
-           "evaluation": pre["evaluation"], "models": {}}
+           "evaluation": pre["evaluation"], "evaluator_version": EVALUATOR_VERSION, "models": {}}
     gt_all = None
     for name, path, kind in models:
         print(f"  推理 {name} …")

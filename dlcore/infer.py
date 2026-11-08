@@ -3,7 +3,9 @@
 Pre-processing is identical to the deployed SnapDurian server (server/infer.py, `Detector.letterbox`):
 EXIF transpose, RGB, letterbox to 640 x 640 with grey (114) padding, PIL bilinear resize.
 Post-processing follows Ultralytics validation: multi-label candidates (class score > conf),
-top 30,000 by score, class-aware NMS (IoU 0.7), at most 300 detections.
+top 30,000 by score, class-aware NMS (IoU 0.7), at most 300 detections. Boxes are mapped back to original pixels
+without clipping to the image (Ultralytics validation matches unclipped boxes; clipping was dropped in evaluator
+version 2, D11).
 """
 from pathlib import Path
 
@@ -92,7 +94,6 @@ class Detector:
         boxes = np.concatenate([xywh[:, :2] - xywh[:, 2:] / 2, xywh[:, :2] + xywh[:, 2:] / 2], 1)
         keep = nms(boxes + cls[:, None] * MAX_WH, scores, iou, max_det)
         boxes, scores, cls = boxes[keep], scores[keep], cls[keep]
-        w, h = im.size
-        boxes[:, [0, 2]] = np.clip((boxes[:, [0, 2]] - left) / r, 0, w)
-        boxes[:, [1, 3]] = np.clip((boxes[:, [1, 3]] - top) / r, 0, h)
+        boxes[:, [0, 2]] = (boxes[:, [0, 2]] - left) / r
+        boxes[:, [1, 3]] = (boxes[:, [1, 3]] - top) / r
         return boxes.astype(np.float64), scores.astype(np.float64), cls.astype(int)

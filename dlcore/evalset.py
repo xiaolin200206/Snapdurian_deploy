@@ -30,7 +30,7 @@ def evaluate_folder(model, images_dir, labels_dir=None, merge=None, progress=100
         if merge:
             for a, t in merge.items():
                 gcls = np.where(gcls == a, t, gcls); c = np.where(c == a, t, c)
-        tps.append(match_tp(gcls, gbox, c, b, 0.5)); confs.append(s); pcs.append(c); gcs.append(gcls)
+        tps.append(match_tp(gcls, gbox, c, b, 0.5, s)); confs.append(s); pcs.append(c); gcs.append(gcls)
         if progress and (k + 1) % progress == 0:
             print(f"  {k + 1}/{len(imgs)}")
     ap = ap_per_class(np.concatenate(tps), np.concatenate(confs), np.concatenate(pcs), np.concatenate(gcs))
