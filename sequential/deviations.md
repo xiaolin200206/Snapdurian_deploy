@@ -138,3 +138,20 @@ is deployed or used for pre-labelling during the study, and nothing in the prelo
   Penang test set (lock unchanged). Adding models to `dl.py score` leaves the v0, v1 and v1_1280 results unchanged
   (deterministic inference; the tree bootstrap draws one resample per replicate, shared by all models, seed 0).
 - Steps 2 and 3 follow the prelock as written; their hashes are likewise committed before the site is scored.
+
+## D10 — Evaluator check run after Pahang and Penang were scored (recorded 2026-11-08, before the check was run)
+
+- The prelock (section 5; `seq_prelock.json`, `evaluation.implementation`) requires the evaluator of `dl.py score`
+  to be checked against Ultralytics 8.4 validation of v0 on the merged_v5 validation split before any site is
+  scored (tolerance 0.01 all-class mAP50). The check was not run before Pahang (scored 2026-11-02) or Penang
+  (scored 2026-11-07); this was noticed on 2026-11-08.
+- The check is run now with `notebooks/check_evaluator_colab.ipynb` as committed (v0 ONNX verified against the
+  prelock hash; conf 0.001, NMS IoU 0.7, imgsz 640) and its output is committed as `results/evaluator_check.json`
+  before any further scoring (H3 step 1 at Penang, then Klang). The check uses only v0 and the merged_v5 validation
+  images, no site data, so having seen the site scores cannot influence it. For reference, the prelock already holds
+  an Ultralytics validation of the v0 ONNX on the same split, recorded before any site was visited
+  (`v0.reference_val_onnx`, all-class mAP50 0.3932); the notebook prints it alongside.
+- If the all-class mAP50 difference is ≤ 0.01, the Pahang and Penang results stand unchanged. If it is larger, the
+  difference is reported, the evaluator is corrected as the prelock specifies, Pahang and Penang are re-scored with
+  the corrected evaluator on their unchanged locked test sets, and both the original and the re-scored results are
+  reported, the re-scored ones as primary.

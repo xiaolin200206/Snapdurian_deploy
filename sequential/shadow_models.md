@@ -13,6 +13,7 @@ Hashes are recorded here before the site on which the shadow model is scored is 
 |---|---|---|---|---|---|---|
 | v0_1280 | v0 | Pahang | durian_11cls_1280_v0_1280_20261102_76734ad1.onnx | 76734ad115a94d891ed7ec45cbda7eaa5731921dd2e8fdc4c540f204c0aaa8df | 91687ba9c199a8de1735adaa56726b9d4778b8fee98ad5992fcbbbe84328dcc9 | 2026-11-02, A100, 1.28 h |
 | v1_1280 | v1 | Penang | durian_11cls_1280_v1_1280_20261102_3805d2c6.onnx | 3805d2c62e704bf97f753d7d31e440be7aadc7c315cd9dbc169384b2c251eb9d | dd0ca22b1eb6f93e2104424126c4904da8e38bf24cdfe9226adab0e2bc99228d | 2026-11-02, A100, 1.61 h |
+| v2_1280 | v2 | Klang | durian_11cls_1280_v2_1280_20261108_716a0afd.onnx | 716a0afde1b37185ef44edd1b48f5ff047afad354b91e291dae0c580edbbdc6e | a52f711a60b2478e777edd53139a6deccd3ef00380a8c6e9c07ba3f0ffa8a6a5 | 2026-11-08, L4, 3.06 h |
 
 Results so far: Pahang, v0_1280 - v0 = +0.0366 mAP50-core, 95% tree-bootstrap CI [-0.0186, +0.0648]; on the
 smaller-lesion half of the test images +0.0487 [+0.0173, +0.0789], on the larger-lesion half +0.0116 [-0.1760, +0.0926]
