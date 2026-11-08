@@ -1,0 +1,21 @@
+Site penang (order 2), 55 test images, trees [2, 4, 6, 8]
+core classes used: ['algal_spot', 'leaf_spot_blight', 'psyllid', 'psyllid_damage']
+
+v0         mAP50-core 0.3520  [0.2542, 0.4217]   mAP50-all 0.2583   (registered, 420b4c520f98…)
+v1         mAP50-core 0.4884  [0.4543, 0.5980]   mAP50-all 0.4129   (registered, 50a84f911ed3…)
+v1_1280    mAP50-core 0.5096  [0.3633, 0.5577]   mAP50-all 0.3993   (extra, 3805d2c62e70…)
+
+H1 pair: v1 - v0 = +0.1365  95% CI [+0.1040, +0.3438]
+pair (exploratory): v1_1280 - v1 = +0.0212  95% CI [-0.2347, +0.0392]
+
+exploratory split by lesion size (threshold: median relative box side 0.0108; 7 images without boxes excluded):
+  near (larger lesions): 24 images, 4 trees
+    v0         mAP50-core 0.3653  [0.2869, 0.4820]
+    v1         mAP50-core 0.5112  [0.4820, 0.6111]
+    v1_1280    mAP50-core 0.5042  [0.4214, 0.5360]
+    v1_1280 - v1 = -0.0070  95% CI [-0.0922, +0.0290]
+  far (smaller lesions): 24 images, 4 trees
+    v0         mAP50-core 0.3599  [0.2344, 0.4341]
+    v1         mAP50-core 0.4914  [0.4468, 0.5923]
+    v1_1280    mAP50-core 0.5095  [0.3864, 0.5685]
+    v1_1280 - v1 = +0.0181  95% CI [-0.1912, +0.0409]

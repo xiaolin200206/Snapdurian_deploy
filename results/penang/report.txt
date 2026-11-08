@@ -1,21 +1,36 @@
 Site penang (order 2), 55 test images, trees [2, 4, 6, 8]
 core classes used: ['algal_spot', 'leaf_spot_blight', 'psyllid', 'psyllid_damage']
 
-v0         mAP50-core 0.3520  [0.2542, 0.4217]   mAP50-all 0.2583   (registered, 420b4c520f98…)
-v1         mAP50-core 0.4884  [0.4543, 0.5980]   mAP50-all 0.4129   (registered, 50a84f911ed3…)
-v1_1280    mAP50-core 0.5096  [0.3633, 0.5577]   mAP50-all 0.3993   (extra, 3805d2c62e70…)
+v0         mAP50-core 0.3308  [0.2378, 0.4050]   mAP50-all 0.2412   (registered, 420b4c520f98…)
+v1         mAP50-core 0.4775  [0.4427, 0.5906]   mAP50-all 0.4024   (registered, 50a84f911ed3…)
+v1_1280    mAP50-core 0.4983  [0.3549, 0.5442]   mAP50-all 0.3861   (extra, 3805d2c62e70…)
+S1_s0      mAP50-core 0.4229  [0.4047, 0.5440]   mAP50-all 0.3185   (extra, 3fea8c8ecdcc…)
+S1_s1      mAP50-core 0.4090  [0.3802, 0.5257]   mAP50-all 0.3207   (extra, 682ebece64aa…)
+S1_s2      mAP50-core 0.4433  [0.4182, 0.5343]   mAP50-all 0.3135   (extra, 2a2c8fb63345…)
+R0_s1      mAP50-core 0.3097  [0.2598, 0.4378]   mAP50-all 0.2165   (extra, 7e4067ef1aeb…)
+R0_s2      mAP50-core 0.3221  [0.2828, 0.4077]   mAP50-all 0.2309   (extra, 9251b501542e…)
 
-H1 pair: v1 - v0 = +0.1365  95% CI [+0.1040, +0.3438]
-pair (exploratory): v1_1280 - v1 = +0.0212  95% CI [-0.2347, +0.0392]
+H1 pair: v1 - v0 = +0.1466  95% CI [+0.1098, +0.3529]
+pair (exploratory): v1_1280 - v1 = +0.0208  95% CI [-0.2357, +0.0357]
 
 exploratory split by lesion size (threshold: median relative box side 0.0108; 7 images without boxes excluded):
   near (larger lesions): 24 images, 4 trees
-    v0         mAP50-core 0.3653  [0.2869, 0.4820]
-    v1         mAP50-core 0.5112  [0.4820, 0.6111]
-    v1_1280    mAP50-core 0.5042  [0.4214, 0.5360]
-    v1_1280 - v1 = -0.0070  95% CI [-0.0922, +0.0290]
+    v0         mAP50-core 0.3432  [0.2620, 0.4666]
+    v1         mAP50-core 0.5024  [0.4737, 0.5991]
+    v1_1280    mAP50-core 0.4921  [0.4075, 0.5237]
+    S1_s0      mAP50-core 0.4629  [0.4390, 0.5535]
+    S1_s1      mAP50-core 0.4218  [0.4010, 0.4996]
+    S1_s2      mAP50-core 0.4571  [0.3750, 0.5523]
+    R0_s1      mAP50-core 0.3122  [0.2474, 0.4597]
+    R0_s2      mAP50-core 0.3176  [0.2635, 0.4877]
+    v1_1280 - v1 = -0.0103  95% CI [-0.0964, +0.0266]
   far (smaller lesions): 24 images, 4 trees
-    v0         mAP50-core 0.3599  [0.2344, 0.4341]
-    v1         mAP50-core 0.4914  [0.4468, 0.5923]
-    v1_1280    mAP50-core 0.5095  [0.3864, 0.5685]
-    v1_1280 - v1 = +0.0181  95% CI [-0.1912, +0.0409]
+    v0         mAP50-core 0.3383  [0.2177, 0.4148]
+    v1         mAP50-core 0.4789  [0.4315, 0.5834]
+    v1_1280    mAP50-core 0.4984  [0.3805, 0.5574]
+    S1_s0      mAP50-core 0.4029  [0.3884, 0.5132]
+    S1_s1      mAP50-core 0.4124  [0.3781, 0.4771]
+    S1_s2      mAP50-core 0.4491  [0.4196, 0.5298]
+    R0_s1      mAP50-core 0.3341  [0.2995, 0.4496]
+    R0_s2      mAP50-core 0.3461  [0.3130, 0.4006]
+    v1_1280 - v1 = +0.0194  95% CI [-0.1897, +0.0474]

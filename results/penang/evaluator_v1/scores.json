@@ -1,0 +1,234 @@
+{
+  "site": "penang",
+  "created": "2026-11-07T23:37:11+08:00",
+  "lock_sha256": "5add0800167efd9499d0d7b824253fe2d27370747fbdf229be89914d801cdc54",
+  "evaluation": {
+    "inference": {
+      "format": "onnx",
+      "imgsz": 640,
+      "conf": 0.001,
+      "nms_iou": 0.7,
+      "max_det": 300,
+      "preprocessing": "identical to the deployed server: EXIF transpose, letterbox 640, grey 114 padding, PIL bilinear",
+      "postprocessing": "Ultralytics validation style: multi-label candidates (class score > conf), top 30000, class-aware NMS, max 300"
+    },
+    "class_merge_before_scoring": {
+      "scale_insect": "psyllid"
+    },
+    "ap": "AP50 per class as Ultralytics 8.4 ap_per_class (101-point, IoU 0.5)",
+    "primary_metric": {
+      "name": "mAP50-core",
+      "core_classes": [
+        "algal_spot",
+        "leaf_spot_blight",
+        "leafhopper_damage",
+        "psyllid",
+        "psyllid_damage"
+      ],
+      "min_gt_boxes_per_class_per_site": 10,
+      "same_class_set_for_all_versions_at_a_site": true
+    },
+    "secondary_metric": "mAP50 over all classes with >= 1 GT box (reported, no prediction)",
+    "bootstrap": {
+      "unit": "tree",
+      "within": "site",
+      "replicates": 2000,
+      "seed": 0,
+      "missing_class_in_replicate": "left out of that replicate's mean",
+      "pooled_H1": "sites resampled independently"
+    },
+    "implementation": "dl.py score; checked against Ultralytics 8.4 val of v0 on merged_v5 val before any site is scored (tolerance 0.01 all-class mAP50)"
+  },
+  "models": {
+    "v0": {
+      "kind": "registered",
+      "sha256": "420b4c520f98f301b2fbbef7c471372e4091ccdd28692d7f9afbf6dda3d51dce",
+      "imgsz": 640,
+      "mAP50_core": 0.3519650432580876,
+      "mAP50_all": 0.25826672102794385,
+      "AP50": {
+        "algal_spot": 0.7845870979337682,
+        "leaf_spot_blight": 0.248410319901025,
+        "leafhopper_damage": 0.0,
+        "psyllid": 0.02362792737777939,
+        "psyllid_damage": 0.3512348278197779,
+        "weevil_damage": 0.1417401531353127
+      },
+      "mAP50_core_ci95": [
+        0.2542207349187018,
+        0.4216774802793901
+      ]
+    },
+    "v1": {
+      "kind": "registered",
+      "sha256": "50a84f911ed337bf0f6fb45c967ff681354b6f214c6d928105fb4859e3c2187a",
+      "imgsz": 640,
+      "mAP50_core": 0.48842933218454015,
+      "mAP50_all": 0.4128601632758446,
+      "AP50": {
+        "algal_spot": 0.8889590266192319,
+        "leaf_spot_blight": 0.4963813897109627,
+        "leafhopper_damage": 0.0,
+        "psyllid": 0.07337352907310285,
+        "psyllid_damage": 0.4950033833348632,
+        "weevil_damage": 0.5234436509169071
+      },
+      "mAP50_core_ci95": [
+        0.45432775236473133,
+        0.5980240992953528
+      ]
+    },
+    "v1_1280": {
+      "kind": "extra",
+      "sha256": "3805d2c62e704bf97f753d7d31e440be7aadc7c315cd9dbc169384b2c251eb9d",
+      "imgsz": 1280,
+      "mAP50_core": 0.5095865839991874,
+      "mAP50_all": 0.399260030421747,
+      "AP50": {
+        "algal_spot": 0.8296957703168617,
+        "leaf_spot_blight": 0.5921643657252638,
+        "leafhopper_damage": 0.0,
+        "psyllid": 0.13059873406781367,
+        "psyllid_damage": 0.48588746588681075,
+        "weevil_damage": 0.357213846533732
+      },
+      "mAP50_core_ci95": [
+        0.3632961297780307,
+        0.5577064668918871
+      ]
+    }
+  },
+  "core_classes_used": [
+    "algal_spot",
+    "leaf_spot_blight",
+    "psyllid",
+    "psyllid_damage"
+  ],
+  "gt_boxes_merged": {
+    "algal_spot": 126,
+    "leaf_spot_blight": 258,
+    "leafhopper_damage": 2,
+    "psyllid": 120,
+    "psyllid_damage": 603,
+    "weevil_damage": 29
+  },
+  "n_images": 55,
+  "trees": [
+    2,
+    4,
+    6,
+    8
+  ],
+  "H1_pair": {
+    "deployed": "v1",
+    "previous": "v0",
+    "diff": 0.13646428892645257,
+    "diff_ci95": [
+      0.10402784321732739,
+      0.3438035765805074
+    ]
+  },
+  "pairs": [
+    {
+      "a": "v1_1280",
+      "b": "v1",
+      "diff": 0.021157251814647282,
+      "diff_ci95": [
+        -0.23472818172117849,
+        0.03915852606213277
+      ]
+    }
+  ],
+  "exploratory_size_split": {
+    "threshold_median_relative_box_side": 0.01082920708744924,
+    "images_without_gt_excluded": 7,
+    "subsets": {
+      "near (larger lesions)": {
+        "n_images": 24,
+        "trees": [
+          2,
+          4,
+          6,
+          8
+        ],
+        "models": {
+          "v0": {
+            "mAP50_core": 0.3653465939958325,
+            "mAP50_core_ci95": [
+              0.28694722241123055,
+              0.4819877814777076
+            ]
+          },
+          "v1": {
+            "mAP50_core": 0.511155776704949,
+            "mAP50_core_ci95": [
+              0.48203150380023585,
+              0.6110611896821684
+            ]
+          },
+          "v1_1280": {
+            "mAP50_core": 0.5041825016472137,
+            "mAP50_core_ci95": [
+              0.42135810406487684,
+              0.5359816304388928
+            ]
+          }
+        },
+        "pairs": [
+          {
+            "a": "v1_1280",
+            "b": "v1",
+            "diff": -0.006973275057735373,
+            "diff_ci95": [
+              -0.09220893959367515,
+              0.0290488087577504
+            ]
+          }
+        ]
+      },
+      "far (smaller lesions)": {
+        "n_images": 24,
+        "trees": [
+          2,
+          4,
+          6,
+          8
+        ],
+        "models": {
+          "v0": {
+            "mAP50_core": 0.3599193708701609,
+            "mAP50_core_ci95": [
+              0.2343640941501001,
+              0.4340738797678986
+            ]
+          },
+          "v1": {
+            "mAP50_core": 0.4913733860429634,
+            "mAP50_core_ci95": [
+              0.4468324082204491,
+              0.5922828326624752
+            ]
+          },
+          "v1_1280": {
+            "mAP50_core": 0.5094856507064027,
+            "mAP50_core_ci95": [
+              0.3864447248761257,
+              0.5684590805266646
+            ]
+          }
+        },
+        "pairs": [
+          {
+            "a": "v1_1280",
+            "b": "v1",
+            "diff": 0.018112264663439348,
+            "diff_ci95": [
+              -0.19119053565872013,
+              0.0409081944713266
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
