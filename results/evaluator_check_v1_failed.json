@@ -1,0 +1,57 @@
+{
+  "ultralytics_version": "8.4.182",
+  "v0_sha256": "420b4c520f98f301b2fbbef7c471372e4091ccdd28692d7f9afbf6dda3d51dce",
+  "n_images": 451,
+  "ultralytics_mAP50": 0.39319145866070576,
+  "ours_mAP50": 0.43369510700708047,
+  "diff": 0.04050364834637471,
+  "max_class_diff": 0.08875079424182852,
+  "tolerance": 0.01,
+  "passed": false,
+  "per_class": {
+    "algal_spot": {
+      "ultralytics": 0.5711348190520894,
+      "ours": 0.5844339311968405
+    },
+    "leaf_spot_blight": {
+      "ultralytics": 0.48619735517479595,
+      "ours": 0.5112616280743276
+    },
+    "leafhopper_damage": {
+      "ultralytics": 0.29676901720566823,
+      "ours": 0.33399449382138824
+    },
+    "pink_disease": {
+      "ultralytics": 0.2737785786812532,
+      "ours": 0.2943722498840787
+    },
+    "psyllid": {
+      "ultralytics": 0.2780171188111752,
+      "ours": 0.3172824358428131
+    },
+    "psyllid_damage": {
+      "ultralytics": 0.13313240555156067,
+      "ours": 0.14753951469011117
+    },
+    "root_disease": {
+      "ultralytics": 0.3634061453273367,
+      "ours": 0.45215693956916525
+    },
+    "scale_insect": {
+      "ultralytics": 0.6476413694535504,
+      "ours": 0.6838671113354214
+    },
+    "stem_borer": {
+      "ultralytics": 0.07322760997967989,
+      "ours": 0.15900287357175708
+    },
+    "web_blight": {
+      "ultralytics": 0.42989227204228697,
+      "ours": 0.5046405098088297
+    },
+    "weevil_damage": {
+      "ultralytics": 0.7719093539883667,
+      "ours": 0.7820944892831524
+    }
+  }
+}
