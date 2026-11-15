@@ -1,4 +1,4 @@
-# Malacca（第 4 站，部署 v3，文件名前缀 `ml1`；D7，暂定）
+# Malacca（第 4 站，部署 v3，文件名前缀 `ml1`；D13，最后一个新农场）
 
 > 顺序和版本是暂定的（D7）：去之前先在 `deviations.md` 记一条确认。如果和 Johor 同一趟去，第二个农场继续用当时服务器上的版本预标，新版本回来后离线打分（D1 的处理方式）。
 
@@ -37,7 +37,7 @@
 10. commit `results/malacca/`。
 
 ## 训练下一版（v4）
-- `python dl.py build-train --name v4 --merged data/merged_v5 --sites pahang penang klang malacca`
+- `python dl.py build-train --name v4 --merged data/merged_v5 --sites pahang penang johor malacca`
 - 在 Colab 用 `notebooks/train_version_colab.ipynb` 训练并导出 ONNX。
 - `python dl.py register --version v4 --onnx <导出的 best.onnx> --server-file <服务器上的文件名>`
 - **commit + push `sequential/versions_log.md` 之后**，才去下一站；服务器上 `admin.py use` 这个文件。

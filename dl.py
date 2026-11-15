@@ -128,7 +128,7 @@ def cmd_status(a):
         sj = P["results"] / "scores.json"
         names = set(json.loads(sj.read_text(encoding="utf-8")).get("models", {})) if sj.exists() else set()
         k = cfg["order"] - 1
-        if 1 <= k <= 3 and not cfg.get("revisit"):     # H3 steps 1-3 = sites 2-4 (D7: Penang, Klang, Malacca)
+        if 1 <= k <= 3 and not cfg.get("revisit"):     # H3 steps 1-3 = sites 2-4 (D13: Penang, Johor, Malacca)
             ns = sum(f"S{k}_s{i}" in names for i in range(3)); nr = sum(f"R{k - 1}_s{i}" in names for i in (1, 2))
             print(f"   {'✓' if ns == 3 and nr == 2 else '·'} H3 第 {k} 步：S{k}_s0–s2 打了 {ns}/3，R{k - 1}_s1–s2 打了 {nr}/2"
                   f"（v{k - 1} 本身算 R{k - 1}_s0；模型只用 v{k - 1} 的训练集，现场之后再训也可以）")

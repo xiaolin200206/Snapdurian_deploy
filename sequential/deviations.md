@@ -205,3 +205,22 @@ is deployed or used for pre-labelling during the study, and nothing in the prelo
   with Ultralytics pre-processing after the last site.
 - Exploratory observation: training used OpenCV INTER_LINEAR while the server uses PIL; on merged_v5 validation this
   mismatch favoured the server pre-processing for v0 (+0.0333 mAP50).
+
+## D13 — Klang cancelled; Johor becomes site 3 with v2, Malacca site 4 and the last new farm (recorded 2026-11-16, before either visit)
+
+- The Klang grower did not give an address or a date on two attempts (2026-11-13 and 2026-11-15), so Klang (D7,
+  site 3) is cancelled. No Klang photograph was taken; nothing about Klang enters any analysis.
+- **Site 3 is a farm in the Bukit Gambir area, Johor**, introduced through a third party, never visited and not in any
+  training data (the author had visited only Muar farms before; none of them is in merged_v5 or in any site of this
+  study). Prefix `jh1`. The deployed version is **v2**, registered and pushed in a898c41 and live on the server since
+  2026-11-08; nothing was retrained for this change. The visit date and district are recorded in the lock.
+- Johor was already in the CEA prelock, so its odd-numbered trees go to the CEA test set as that prelock specifies.
+- What moves from Klang to Johor, all committed before this deviation: the v2_1280 shadow model (D6) and H3 step 2
+  (S2_s0–s2, R1_s1–s2; `sequential/h3_models.md`). H3 step 3 (S3 with Johor as the new site, R2) is trained after the
+  Johor visit and scored at Malacca.
+- **Site 4 is Malacca** with v3 (trained on merged_v5 + Pahang + Penang + Johor, prelock recipe), registered and
+  pushed before that visit. Malacca is the last new-farm site: H1 has three paired differences (Penang v1−v0, Johor
+  v2−v1, Malacca v3−v2), the "at least three originally planned" steps of D7; H2 compares Malacca with Pahang; H3 has
+  its three steps at Penang, Johor and Malacca. There is no fifth site and no revisit.
+- If Malacca cannot be visited, Johor becomes the last new-farm site and H1 and H3 have two steps; this is recorded in
+  a further deviation as soon as the Malacca visit is known to be off, and the reduced design is reported as such.

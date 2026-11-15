@@ -29,3 +29,11 @@ Hashes are recorded here and pushed before the models are scored (see D9 for ste
 | S2_s2 | durian_11cls_640_S2_s2_20261108_212faf1b.onnx | 212faf1b7d252bbf8d83dbdd85025541e54139ba169ed0998a195584532ff890 | a4b524f60c2900c76caa41b01564916f19f66edef72e63fb12624e8f1cd28740 | 2026-11-08, L4, 0.75 h | 1909 images: merged_v5 train − 109 (by group, removal seed 0) + Pahang 320 + Penang 109 |
 | R1_s1 | durian_11cls_640_R1_s1_20261108_911dfe37.onnx | 911dfe371f6907f932425ae09153631ab468f41f15a5797741aa6560c2166994 | 8d38fab7982f9262c9f38cc55a8bce603a497df09e06933cf44c00602243476e | 2026-11-08, L4, 0.74 h | 1909 images: merged_v5 train + Pahang 320 (v1 recipe) |
 | R1_s2 | durian_11cls_640_R1_s2_20261108_dda0f659.onnx | dda0f65927fb2e272a41be7c5e6d91b9123a399919894ff6519d4c450adbe0a1 | abf3dee90c342d6fc7e9c373dbd46431e23852dcb9b40cab36aed1fe9fc97b0e | 2026-11-08, L4, 0.75 h | 1909 images: merged_v5 train + Pahang 320 (v1 recipe) |
+
+Note (recorded 2026-11-08, before any S2 model is scored): two Colab sessions of the training queue overlapped, so
+S2_s0 was trained twice with the same data, recipe and seed: `durian_11cls_640_S2_s0_20261108_d477e088.onnx`
+(finished 14:57 MYT) and `durian_11cls_640_S2_s0_20261108_0fbe484a.onnx` (finished 15:20 MYT). The run in the table
+(0fbe484a) is the one whose `S2_s0_info.json` was written last; it was committed in a898c41, before Klang was visited
+and before either run was scored. The d477e088 run is not scored or used anywhere; its file is kept, unregistered.
+
+Note (D13, recorded before the visit): Klang was cancelled; step 2 (S2_s0–s2, R1_s1–s2) is scored at Johor (site 3) and step 3 (S3, R2; trained with Johor as the new site) at Malacca (site 4).

@@ -21,3 +21,5 @@ smaller-lesion half of the test images +0.0487 [+0.0173, +0.0789], on the larger
 Penang, v1_1280 - v1 = +0.0212 [-0.2347, +0.0392] (4 test trees, core classes without leafhopper_damage);
 smaller-lesion half +0.0181 [-0.1912, +0.0409], larger-lesion half -0.0070 [-0.0922, +0.0290]
 (`results/penang/scores.json`). The decision rule is applied once, pooled over all sites, after the last site.
+
+Note (D13, recorded before the visit): Klang was cancelled; v2_1280 is scored at Johor (site 3) instead, against v2 on the same even-numbered trees.

@@ -1,8 +1,8 @@
 # Snapdurian_deploy
 
 A pre-registered study of a **deploy–collect–retrain loop** for a durian leaf-disease detector running in a
-progressive web app (SnapDurian), on new farms in Malaysia, 2026: Pahang → Penang → Klang (Selangor) → Malacca →
-Johor (sites 4 and 5 provisional; see deviation D7).
+progressive web app (SnapDurian), on new farms in Malaysia, 2026: Pahang → Penang → Johor (Bukit Gambir area) → Malacca
+(site order fixed by D13: Klang cancelled; Johor is site 3, Malacca site 4 and the last new farm).
 
 After each field site the detector is retrained on everything collected so far and redeployed before the next
 site. The study asks how much each update improves accuracy on the next, not-yet-visited farm, and how the
@@ -10,7 +10,7 @@ human correction effort changes as the model improves.
 
 **The protocol is fixed in [`sequential/prelock_note.md`](sequential/prelock_note.md)** (with
 [`sequential/seq_prelock.json`](sequential/seq_prelock.json)), committed before the first site was visited.
-Every later change of plan is in [`sequential/deviations.md`](sequential/deviations.md) (D1–D12 so far), recorded
+Every later change of plan is in [`sequential/deviations.md`](sequential/deviations.md) (D1–D13 so far), recorded
 before the data it affects exist. If this README disagrees with the prelock plus deviations, those win.
 
 ## Hypotheses (summary; exact criteria in the prelock and deviations)
@@ -19,7 +19,7 @@ before the data it affects exist. If this README disagrees with the prelock plus
 |---|---|---|
 | H1 | Each redeployed version beats the previous one on the next farm (mAP50 over core classes); primary criterion: mean of the paired differences over all new-farm sites > 0 (D7) | even-numbered trees, sites 2–5 |
 | H2 | Box corrections per image are lower at the last new-farm site than at the first (v0 pre-labels) | all photographs of each site |
-| H3 | Swapping old images for the same number of new-farm images beats the previous recipe (test of Ruigrok et al. 2023); 3 steps, scored at Penang, Klang, Malacca (D7) | even-numbered trees |
+| H3 | Swapping old images for the same number of new-farm images beats the previous recipe (test of Ruigrok et al. 2023); 3 steps, scored at Penang, Johor, Malacca (D13) | even-numbered trees |
 | H4 | *Dropped before any H4 data were collected (D4).* | – |
 
 Exploratory, not part of the predictions: 640 vs 1280 input size (D6; shadow models in

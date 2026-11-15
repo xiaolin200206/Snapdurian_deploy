@@ -1,17 +1,15 @@
 {
   "site": "johor",
   "state": "Johor",
-  "order": 5,
+  "order": 3,
   "prefix": "jh1",
-  "deployed_version": "v4",
-  "previous_version": "v3",
+  "deployed_version": "v2",
+  "previous_version": "v1",
   "versions_to_score": [
     "v0",
     "v1",
-    "v2",
-    "v3",
-    "v4"
+    "v2"
   ],
   "scratch_seed": 0,
-  "deviation": "D7: provisional order and version; D1 no longer applies as written; confirmed in a deviation recorded before the visit"
+  "deviation": "D13 (sequential/deviations.md): Klang cancelled; Johor (Bukit Gambir area) becomes site 3 with v2, recorded before the visit"
 }
