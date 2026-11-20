@@ -1,0 +1,24 @@
+site johor  merge-qc 2026-11-20T12:37:39+08:00
+export: johor.v2i.yolov8.zip
+images: 191 renamed, 191 with QC labels
+images with no box (Null): 2
+labels in the export that match no renamed image (ignored): 1, e.g. ['README.roboflow']
+class names in the export (boxes): algal_missing=103, algal_modify=1, algal_spot=173, leaf_rot=302, leaf_rot_missing=162, leaf_rot_modify=23, leafhopper_damage=12, phomopsis=303, phomopsis_missing=237, pink_disease=2, psyllid=9, psyllid_damage=51, psyllid_damage_missing=75, psyllid_damage_modify=3, weevil_damage=3
+
+per class (product names; leaf_rot + phomopsis counted as leaf_spot_blight; pre-labels by v2):
+  class                 final     v2  v2 kept  v2 found  _missing  _modify
+  algal_spot              277    188      91%       62%       103        1
+  leaf_spot_blight       1027    643      93%       58%       399       23
+  leafhopper_damage        12     50      24%      100%         0        0
+  pink_disease              2      6      33%      100%         0        0
+  psyllid                   9    389       2%      100%         0        0
+  psyllid_damage          129     58      90%       40%        75        3
+  web_blight                0      5       0%         -         0        0
+  weevil_damage             3      6      50%      100%         0        0
+  final = boxes after QC; v2 = v2 pre-labels (conf >= 0.25); v2 kept = share of v2 boxes you kept (same class, IoU >= 0.5); v2 found = share of your final boxes v2 had found
+all boxes vs v2 pre-labels: unchanged 848, relabelled 32, added 579, removed 465  (per image: 5.63 changes)
+
+CEA side (odd trees):
+  boxes not split into Phomopsis / leaf_rot (leaf_spot_blight or web_blight): 0 on odd trees (0 on all trees); dropped from the CEA copy: 0 odd-tree, 0 even-tree boxes
+  numbers for the CEA 3_lock.sh: N_PHOTOS=191 (all photos in the PWA export), N_ANNOTATED=114 (odd-tree photos), N_ADDED=367, N_REMOVED=246, N_RELABELLED=22
+written: C:\Users\Lim Ding Shan\Desktop\conference_preparation\data\sites\johor\final (11 product classes, for dl.py split) and C:\Users\Lim Ding Shan\Desktop\conference_preparation\data\sites\johor\cea_export (split names, for the CEA prepare step)

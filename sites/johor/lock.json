@@ -1,0 +1,33 @@
+{
+  "stage": "lock",
+  "site": "johor",
+  "order": 3,
+  "created": "2026-11-20T12:40:01+08:00",
+  "prelock_sha256": "eb622a3b6f787961c596f0b221908636cea3c026b0fe9cf53eaf561d690f5364",
+  "deployed_version": "v2",
+  "deployed_sha256": "0802aeb09d246344571e813b99dad1b06289911009778da0bcd4d6691ebcdc10",
+  "versions_log_sha256": "e5b3844f219660c8fcb863ee061f2bc351a4cea1dd586fb6554285ee8dc584d5",
+  "test_set": {
+    "fingerprint": "6a816ae2cfd3ced9f35a6d823ccc571dfcb250762e5ee79e353240921cc0742a",
+    "n_files": 154,
+    "n_images": 77
+  },
+  "all_images": {
+    "fingerprint": "29eb5d6ae066c28529c8670c34ee0300cfbc445690552835805f177f418f7d6b",
+    "n": 191
+  },
+  "final_labels_all": {
+    "fingerprint": "9b47feefb60ee33c15d1815ce19bc58dd9505b37eb0a6f3ffe165620148c169f",
+    "n": 191
+  },
+  "prelabels_all": {
+    "fingerprint": "3dfe6068330c0f26fe56d94bb1312648ee8195e623fa449697207924c41bea66",
+    "n": 191
+  },
+  "scratch_lock_sha256": null,
+  "split_report": "site johor  split 2026-11-20T12:38:36+08:00\nimages: all trees 191, even-tree test set 77 (5 trees: [2, 4, 6, 8, 10])\nboxes, even-tree test set: algal_spot=78, leaf_spot_blight=386, leafhopper_damage=2, pink_disease=1, psyllid=4, psyllid_damage=44, weevil_damage=1\nboxes, all trees (training data for the next version): algal_spot=277, leaf_spot_blight=1027, leafhopper_damage=12, pink_disease=2, psyllid=9, psyllid_damage=129, weevil_damage=3\ncore classes with >= 10 boxes on the test set (scale_insect merged into psyllid): ['algal_spot', 'leaf_spot_blight', 'psyllid_damage']\ncore classes excluded at this site: ['leafhopper_damage', 'psyllid']\n",
+  "qc_hours": null,
+  "visit_date": "2026-11-19",
+  "district": "Tangkak",
+  "note": ""
+}

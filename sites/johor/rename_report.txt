@@ -1,0 +1,8 @@
+site johor  renamed 2026-11-19T22:07:26+08:00
+export: _export_unzipped  photos in export: 191
+assigned to trees: 191  (odd/CEA 114, even/this study 77)  unassigned: 0
+per tree: t1=14, t2=10, t3=22, t4=18, t5=14, t6=14, t7=23, t8=22, t9=10, t10=13, t11=31
+pre-labelling model(s) in export: {'durian_11cls_640_v2_20261107_0802aeb0': 191}
+expected deployed model: durian_11cls_640_v2_20261107_0802aeb0
+tree boundaries (cut in the longest pause between photos near each noted change): t1|t2 at 11:43:06 (pause 43 s); t2|t3 at 11:47:58 (pause 94 s); t3|t4 at 11:54:34 (pause 38 s); t4|t5 at 11:59:28 (pause 58 s); t5|t6 at 12:04:09 (pause 35 s); t6|t7 at 12:08:39 (pause 61 s); t7|t8 at 12:15:45 (pause 77 s); t8|t9 at 12:22:00 (pause 45 s); t9|t10 at 12:26:14 (pause 69 s); t10|t11 at 12:32:36 (pause 65 s)
+check sheet (first two and last two photos of every tree): tree_check.jpg
