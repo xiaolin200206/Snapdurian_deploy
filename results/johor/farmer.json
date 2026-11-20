@@ -1,0 +1,54 @@
+{
+  "site": "johor",
+  "created": "2026-11-20T22:47:40+08:00",
+  "photos": 191,
+  "even_only": false,
+  "photos_with_disease": 189,
+  "app_reported_something": 186,
+  "app_named_a_present_disease": 174,
+  "app_named_all": 143,
+  "photos_without_disease": 2,
+  "false_alarm_on_healthy": 2,
+  "per_class": {
+    "algal_spot": {
+      "photos_with_it": 42,
+      "app_said_it": 35,
+      "false_alarms": 6
+    },
+    "leaf_spot_blight": {
+      "photos_with_it": 181,
+      "app_said_it": 151,
+      "false_alarms": 2
+    },
+    "leafhopper_damage": {
+      "photos_with_it": 11,
+      "app_said_it": 11,
+      "false_alarms": 28
+    },
+    "pink_disease": {
+      "photos_with_it": 2,
+      "app_said_it": 2,
+      "false_alarms": 4
+    },
+    "psyllid": {
+      "photos_with_it": 7,
+      "app_said_it": 7,
+      "false_alarms": 99
+    },
+    "psyllid_damage": {
+      "photos_with_it": 28,
+      "app_said_it": 15,
+      "false_alarms": 4
+    },
+    "web_blight": {
+      "photos_with_it": 0,
+      "app_said_it": 0,
+      "false_alarms": 5
+    },
+    "weevil_damage": {
+      "photos_with_it": 2,
+      "app_said_it": 2,
+      "false_alarms": 3
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "site": "johor",
+  "created": "2026-11-20T22:47:33+08:00",
+  "n_images": 191,
+  "all_classes": {
+    "unchanged": 848,
+    "relabelled": 32,
+    "added": 579,
+    "removed": 465
+  },
+  "rate_per_image": 5.633507853403142,
+  "core_classes": {
+    "unchanged": 843,
+    "relabelled": 29,
+    "added": 582,
+    "removed": 456
+  },
+  "rate_per_image_core": 5.5863874345549736,
+  "qc_hours": null,
+  "prelabel_threshold": "as exported by the PWA (conf >= 0.25)"
+}

@@ -1,0 +1,39 @@
+Site johor (order 3), 77 test images, trees [2, 4, 6, 8, 10]
+core classes used: ['algal_spot', 'leaf_spot_blight', 'psyllid_damage']
+
+v0         mAP50-core 0.3221  [0.2769, 0.4103]   mAP50-all 0.2820   (registered, 420b4c520f98…)
+v1         mAP50-core 0.4957  [0.3975, 0.5793]   mAP50-all 0.3663   (registered, 50a84f911ed3…)
+v2         mAP50-core 0.5922  [0.4826, 0.6754]   mAP50-all 0.3613   (registered, 0802aeb09d24…)
+v2_1280    mAP50-core 0.5370  [0.5003, 0.6223]   mAP50-all 0.2347   (extra, 716a0afde1b3…)
+S2_s0      mAP50-core 0.4609  [0.4231, 0.5678]   mAP50-all 0.3441   (extra, 0fbe484ae783…)
+S2_s1      mAP50-core 0.4804  [0.4223, 0.5421]   mAP50-all 0.2857   (extra, f0afd58e8850…)
+S2_s2      mAP50-core 0.5479  [0.5184, 0.5965]   mAP50-all 0.3871   (extra, 212faf1b7d25…)
+R1_s1      mAP50-core 0.4558  [0.3709, 0.5565]   mAP50-all 0.3155   (extra, 911dfe371f69…)
+R1_s2      mAP50-core 0.4136  [0.3642, 0.4976]   mAP50-all 0.2554   (extra, dda0f65927fb…)
+
+H1 pair: v2 - v1 = +0.0965  95% CI [+0.0214, +0.1254]
+pair (exploratory): v2_1280 - v2 = -0.0552  95% CI [-0.1005, +0.0857]
+
+exploratory split by lesion size (threshold: median relative box side 0.0278; 1 images without boxes excluded):
+  near (larger lesions): 38 images, 5 trees
+    v0         mAP50-core 0.2090  [0.0714, 0.4561]
+    v1         mAP50-core 0.3702  [0.2659, 0.5385]
+    v2         mAP50-core 0.6219  [0.5739, 0.7140]
+    v2_1280    mAP50-core 0.3826  [0.2771, 0.5801]
+    S2_s0      mAP50-core 0.3732  [0.2372, 0.5411]
+    S2_s1      mAP50-core 0.3164  [0.2277, 0.4759]
+    S2_s2      mAP50-core 0.4353  [0.2831, 0.6321]
+    R1_s1      mAP50-core 0.3045  [0.2227, 0.5213]
+    R1_s2      mAP50-core 0.2974  [0.2181, 0.4567]
+    v2_1280 - v2 = -0.2393  95% CI [-0.3265, -0.0160]
+  far (smaller lesions): 38 images, 5 trees
+    v0         mAP50-core 0.3615  [0.3011, 0.4580]
+    v1         mAP50-core 0.5479  [0.4496, 0.6422]
+    v2         mAP50-core 0.6118  [0.4797, 0.7203]
+    v2_1280    mAP50-core 0.6125  [0.5482, 0.6792]
+    S2_s0      mAP50-core 0.5022  [0.4322, 0.6262]
+    S2_s1      mAP50-core 0.5474  [0.5012, 0.6081]
+    S2_s2      mAP50-core 0.5973  [0.5526, 0.6664]
+    R1_s1      mAP50-core 0.5038  [0.3355, 0.6197]
+    R1_s2      mAP50-core 0.4647  [0.3697, 0.5867]
+    v2_1280 - v2 = +0.0007  95% CI [-0.0671, +0.1170]

@@ -224,3 +224,33 @@ is deployed or used for pre-labelling during the study, and nothing in the prelo
   its three steps at Penang, Johor and Malacca. There is no fifth site and no revisit.
 - If Malacca cannot be visited, Johor becomes the last new-farm site and H1 and H3 have two steps; this is recorded in
   a further deviation as soon as the Malacca visit is known to be off, and the reduced design is reported as such.
+
+## D14 — Johor field and QC notes (recorded 2026-11-20, after Johor was scored, before the Malacca visit)
+
+None of these changes a hypothesis, a decision rule, a model or the Johor lock (`b0d542dc…`).
+
+- **Rain.** Johor was visited on 2026-11-19 in the monsoon season; it rained through the working window, and 11 trees
+  were photographed (191 photographs; 114 on odd-numbered trees for the CEA test set, 77 on 5 even-numbered test trees).
+- **No separator photographs.** Trees were assigned from the change times noted in the field: each boundary was cut at
+  the longest pause between consecutive photographs near the noted time (pauses of 35–94 s), and the first two and last
+  two photographs of every tree were checked by eye (`tree_check.jpg`). No photograph was left unassigned. All 191
+  photographs were pre-labelled by the deployed v2 (`durian_11cls_640_v2_20261107_0802aeb0`).
+- **Rain reflections pre-labelled as psyllid.** Wet-leaf highlights were often detected as `psyllid` by v2. They were
+  removed in QC; after QC, psyllid has 4 test boxes and leafhopper_damage 2, so both fall below the 10-box threshold and
+  the Johor core set is algal_spot, leaf_spot_blight and psyllid_damage. In the grower view (`results/johor/farmer.json`)
+  the app named psyllid on 106 photographs, 7 of which showed psyllid after QC.
+- **One pink_disease box deleted by mistake in QC**, noticed after the lock. It was not restored, so the locked
+  annotation is used as it is; the tree of that image was not identified. pink_disease is not a core class at Johor.
+- **QC time was not recorded** for Penang or Johor (only the number of box changes, `dl.py qc`). From Malacca on, QC
+  hours, hours on site, travel time, weather on the day and recent spraying (asked from the grower) are recorded.
+- **Pre-label anchoring, flagged before the next site is scored.** Johor test labels were corrected from v2 pre-labels
+  with fewer changes than at earlier sites (5.63 box changes per image, against 11.69 at Pahang and 13.18 at Penang).
+  This can favour v2 over the other models scored at Johor (§7 limitation; H4 was cancelled under D4). In the
+  exploratory size split, v2 scores 0.622 on the larger-lesion half against 0.297–0.435 for every other model, a gap
+  much larger than on the smaller-lesion half. The Johor H1 difference (v2 − v1 = +0.0965, 95% CI [+0.0214, +0.1254])
+  is reported with this caveat.
+- **H3 after two steps.** S beats the recipe at Penang (+0.1042) and at Johor (S2 mean 0.4964 vs recipe mean 0.4550,
+  +0.0413), so the prelock rule (at least 2 of 3 steps) is already met. Step 3 at Malacca is still trained (committed in
+  e08b223), scored and reported in full; the rule is not changed.
+- **v3** was registered and pushed in e08b223 and has been live on the server since 2026-11-20, before the Malacca
+  visit; the v3_1280, S3 and R2 hashes are in the same commit.
