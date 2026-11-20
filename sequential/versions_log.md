@@ -5,6 +5,6 @@
 | v0 | 1 Pahang | durian_11cls_640_v5.onnx (server: durian_11cls_640_v5_20261018_420b4c52.onnx) | 420b4c520f98f301b2fbbef7c471372e4091ccdd28692d7f9afbf6dda3d51dce | with prelock |
 | v1 | 2 Penang | durian_11cls_640_v1_20261101_50a84f91.onnx (server: durian_11cls_640_v1_20261101_50a84f91.onnx) | 50a84f911ed337bf0f6fb45c967ff681354b6f214c6d928105fb4859e3c2187a | 2026-11-01T23:54:18+08:00 |
 | v2 | 3 Klang (D7) | durian_11cls_640_v2_20261107_0802aeb0.onnx (server: durian_11cls_640_v2_20261107_0802aeb0.onnx) | 0802aeb09d246344571e813b99dad1b06289911009778da0bcd4d6691ebcdc10 | 2026-11-08T20:16:24+08:00 |
-| v3 | 4 Malacca (provisional, D7) | | | |
+| v3 | 4 Malacca (provisional, D7) | durian_11cls_640_v3_20261120_97986361.onnx (server: durian_11cls_640_v3_20261120_97986361.onnx) | 9798636121b6c4a95a77ed90dfbe8b7da06d8b88f8a28d7756639a2730fbb566 | 2026-11-20T22:24:48+08:00 |
 | v4 | 5 Johor (provisional, D7) | | | |
 | v5 | 6 revisit, exploratory (provisional, D7) | | | |
